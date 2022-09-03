@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "gemini-python"
+version = "0.1.0"
+description = "Gemini is an automatic random testing tool for ScyllaDB."
+authors = ["Lukasz Sojka <lukasz.sojka@scylladb.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+cassandra-driver = "^3.25.0"
+coverage = "^6.4.4"
+
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^2.14.5"
+black = "^22.6.0"
+mypy = "^0.971"
+pytest = "^7.1.2"
+
+[tool.poetry.scripts]
+gemini = 'gemini_python.console:run'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+disallow_any_generics = false
+
+[[tool.mypy.overrides]]
+module = 'tests.*'
+disallow_untyped_defs = false
