@@ -4,6 +4,8 @@ from gemini_python.executor import QueryExecutor
 
 
 class MemoryExecutor(QueryExecutor):
+    """In memory database for unit tests purposes"""
+
     def __init__(self) -> None:
         super().__init__()
         self._data: list[Any] = []

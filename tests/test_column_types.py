@@ -11,4 +11,4 @@ def test_bigint_column():
     col = BigIntColumn("col_bigint")
     assert col.generate_sequence_value() == 1
     assert col.generate_sequence_value() == 2
-    assert type(col.generate_random_value()) == int
+    assert isinstance(col.generate_random_value(), int)
