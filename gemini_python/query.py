@@ -4,6 +4,8 @@ from gemini_python.schema import Table
 
 
 class QueryGenerator(ABC):
+    """Base class for CQL queries generators."""
+
     def __init__(self, table: Table) -> None:
         self._table = table
 
@@ -15,6 +17,8 @@ class QueryGenerator(ABC):
 
 
 class InsertQueryGenerator(QueryGenerator):
+    """Basic insert query with all table columns."""
+
     def __init__(self, table: Table) -> None:
         super().__init__(table)
         self._stmt = (
@@ -33,6 +37,8 @@ class InsertQueryGenerator(QueryGenerator):
 
 
 class SelectQueryGenerator(QueryGenerator):
+    """Basic select query with all table columns."""
+
     def __init__(self, table: Table) -> None:
         super().__init__(table)
         self._stmt = (

@@ -11,7 +11,7 @@ class Limiter(ABC):
         """Increments value. In case limit was reached,
         waits until value drops below limit."""
 
-    def decrement(self, _: Iterable | None = None) -> None:
+    def decrement(self, _: Iterable | Exception | None = None) -> None:
         """Decreases value.
         This lets increment method to proceed in case of waiting for value drop."""
 
@@ -36,7 +36,7 @@ class ConcurrencyLimiter(Limiter):
         except queue.Full as exc:
             raise TimeoutError("Timeout during waiting for async executor.") from exc
 
-    def decrement(self, _: Iterable | None = None) -> None:
+    def decrement(self, _: Iterable | Exception | None = None) -> None:
         """Decrements running async executions counter."""
         self._queue.get(block=False)
 

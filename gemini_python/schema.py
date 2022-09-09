@@ -6,6 +6,8 @@ from gemini_python.column_types import Column, AsciiColumn, BigIntColumn
 
 @dataclass
 class Table:
+    """Represents Scylla table"""
+
     name: str
     keyspace_name: str
     primary_keys: List[Column]
@@ -31,13 +33,17 @@ class Table:
 
 @dataclass
 class Keyspace:
+    """Represents Scylla keyspace"""
+
     name: str
     replication_strategy: str
     tables: list[Table]
 
     def as_cql(self) -> list[str]:
-        statements = [f"CREATE KEYSPACE IF NOT EXISTS {self.name} "
-                      f"with replication = {self.replication_strategy};"]
+        statements = [
+            f"CREATE KEYSPACE IF NOT EXISTS {self.name} "
+            f"with replication = {self.replication_strategy};"
+        ]
         for table in self.tables:
             statements.append(table.as_cql())
         return statements

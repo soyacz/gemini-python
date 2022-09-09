@@ -9,6 +9,10 @@ from gemini_python.validator import GeminiValidator
 logger = logging.getLogger(__name__)
 
 
+def handle_exception(exception: Exception) -> None:
+    logger.error(exception)
+
+
 def run_gemini(
     generator: QueryGenerator,
     sut_executor: QueryExecutor,
@@ -24,7 +28,7 @@ def run_gemini(
             statement,
             query_values,
             on_success=[limiter.decrement, validate_results],
-            on_error=[limiter.decrement, logger.error],
+            on_error=[limiter.decrement, handle_exception],
         )
     while limiter.value:
         # wait until all requests complete
