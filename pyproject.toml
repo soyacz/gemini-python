@@ -27,6 +27,13 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 100
 
+[tool.pylint.'MESSAGES CONTROL']
+disable = "missing-module-docstring, missing-function-docstring, fixme"
+
+[tool.pylint.'FORMAT']
+# black formats anyway to 100, but not long strings. For these allow len of 140.
+max-line-length=140
+
 [tool.mypy]
 python_version = "3.10"
 strict = true

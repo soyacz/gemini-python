@@ -6,6 +6,8 @@ from gemini_python.executor import QueryExecutor, logger
 
 
 class GeminiValidator:
+    """Class responsible for querying oracle and verifying returned results."""
+
     def __init__(self, oracle: QueryExecutor):
         self.oracle = oracle
 
