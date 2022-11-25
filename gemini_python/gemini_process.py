@@ -49,11 +49,10 @@ class GeminiProcess(Process):
         concurrency = ConcurrencyLimiter(limit=100)
         while True:
             concurrency.increment()
-            statement, query_values = generator.get_query()
-            validate_results = validator.prepare_validation_method(statement, query_values)
+            cql_dto = generator.get_query()
+            validate_results = validator.prepare_validation_method(cql_dto)
             sut_query_executor.execute_async(
-                statement,
-                query_values,
+                cql_dto,
                 on_success=[concurrency.decrement, validate_results],
                 on_error=[concurrency.decrement, handle_exception],
             )

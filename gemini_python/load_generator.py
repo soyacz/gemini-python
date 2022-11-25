@@ -1,3 +1,4 @@
+from gemini_python import CqlDto
 from gemini_python.query import InsertQueryGenerator, SelectQueryGenerator
 from gemini_python.schema import Keyspace
 
@@ -16,5 +17,5 @@ class LoadGenerator:
             case _:
                 raise ValueError("Not supported query operation mode")
 
-    def get_query(self) -> tuple[str, tuple]:
+    def get_query(self) -> CqlDto:
         return next(self._query_generator)

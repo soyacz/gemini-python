@@ -1,5 +1,6 @@
 from abc import ABC
 
+from gemini_python import CqlDto
 from gemini_python.schema import Table
 
 
@@ -12,7 +13,7 @@ class QueryGenerator(ABC):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> tuple[str, tuple]:
+    def __next__(self) -> CqlDto:
         pass
 
 
@@ -30,10 +31,10 @@ class InsertQueryGenerator(QueryGenerator):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> tuple[str, tuple]:
-        # todo: should return Query class
-        return self._stmt, tuple(
-            column.generate_sequence_value() for column in self._table.all_columns
+    def __next__(self) -> CqlDto:
+        return CqlDto(
+            self._stmt,
+            tuple(column.generate_sequence_value() for column in self._table.all_columns),
         )
 
 
@@ -51,7 +52,8 @@ class SelectQueryGenerator(QueryGenerator):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> tuple[str, tuple]:
-        return self._stmt, tuple(
-            column.generate_sequence_value() for column in self._table.primary_keys
+    def __next__(self) -> CqlDto:
+        return CqlDto(
+            self._stmt,
+            tuple(column.generate_sequence_value() for column in self._table.primary_keys),
         )

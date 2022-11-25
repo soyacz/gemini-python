@@ -1,6 +1,7 @@
 from typing import Callable, Iterable
 
 from gemini_python.executor import QueryExecutor
+from gemini_python import CqlDto
 
 
 class RecordingExecutor(QueryExecutor):
@@ -10,22 +11,17 @@ class RecordingExecutor(QueryExecutor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.executed_cqls: list[tuple[str, tuple]] = []
+        self.executed_queries: list[CqlDto] = []
 
     def execute_async(
         self,
-        statement: str,
-        query_values: tuple,
+        cql_dto: CqlDto,
         on_success: list[Callable[[Iterable | None], None]],
         on_error: list[Callable[[Exception], None]],
     ) -> None:
-        self.executed_cqls.append(
-            (statement, query_values),
-        )
+        self.executed_queries.append(cql_dto)
         for callback in on_success:
             callback(None)
 
-    def execute(self, statement: str, query_values: tuple = ()) -> None:
-        self.executed_cqls.append(
-            (statement, query_values),
-        )
+    def execute(self, cql_dto: CqlDto) -> None:
+        self.executed_queries.append(cql_dto)

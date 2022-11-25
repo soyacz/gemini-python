@@ -3,6 +3,7 @@ from itertools import zip_longest
 from typing import Callable, Iterable
 
 from gemini_python.executor import QueryExecutor, logger
+from gemini_python import CqlDto
 
 
 class GeminiValidator:
@@ -26,18 +27,15 @@ class GeminiValidator:
             if actual != expected:
                 logger.error(error_msg, actual, expected)
 
-    def prepare_validation_method(self, statement: str, query_values: tuple) -> Callable:
+    def prepare_validation_method(self, cql_dto: CqlDto) -> Callable:
         # prepare statement upfront, otherwise it hangs when running inside sut executor callback
-        self.oracle.prepare(statement)
-        return partial(self.validate, statement, query_values)
+        self.oracle.prepare(cql_dto.statement)
+        return partial(self.validate, cql_dto)
 
-    def validate(
-        self, statement: str, query_values: tuple, expected_result: Iterable | None
-    ) -> None:
+    def validate(self, cql_dto: CqlDto, expected_result: Iterable | None) -> None:
         validate_fun = partial(self._validate_fun, expected_result)
         self.oracle.execute_async(
-            statement=statement,
-            query_values=query_values,
+            cql_dto,
             on_success=[validate_fun],
             on_error=[logger.exception],
         )
