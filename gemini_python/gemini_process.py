@@ -1,14 +1,17 @@
+import logging
 import time
 from multiprocessing import Process
 
 from gemini_python.executor import (
-    logger,
     QueryExecutorFactory,
 )
 from gemini_python.limiter import ConcurrencyLimiter
 from gemini_python.load_generator import LoadGenerator
 from gemini_python.schema import Keyspace
 from gemini_python.validator import GeminiValidator
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def handle_exception(exception: Exception) -> None:
@@ -57,5 +60,5 @@ class GeminiProcess(Process):
                 on_error=[concurrency.decrement, handle_exception],
             )
             executed_queries_count += 1
-        print(f"inserted {executed_queries_count} rows in {self._duration} seconds")
-        print(f"{round(executed_queries_count / self._duration)} statements/s")
+        logger.info("inserted %s rows in %s seconds", executed_queries_count, self._duration)
+        logger.info("%s statements/s", round(executed_queries_count / self._duration))

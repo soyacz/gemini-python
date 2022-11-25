@@ -11,7 +11,7 @@ from gemini_python.schema import generate_schema
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.INFO)
 
 duration_pattern = re.compile(r"(?P<hours>[\d]*)h|(?P<minutes>[\d]*)m|(?P<seconds>[\d]*)s")
 
@@ -82,6 +82,13 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list
     help="Comma separated host names or IPs of the test cluster that is system under test",
 )
 @click.option(
+    "--drop-schema",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Drop schema before starting tests run",
+)
+@click.option(
     "--duration",
     type=str,
     default="30s",
@@ -93,13 +100,16 @@ def run(
     test_cluster: list[str] | None = None,
     oracle_cluster: list[str] | None = None,
     duration: int = 30,
+    drop_schema: bool = False,
 ) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     keyspace = generate_schema()
     sut_query_executor = QueryExecutorFactory.create_executor(test_cluster)
     oracle_query_executor = QueryExecutorFactory.create_executor(oracle_cluster)
-    keyspace.drop(sut_query_executor)
-    keyspace.drop(oracle_query_executor)
+    if drop_schema:
+        logger.info("dropping schema %s", keyspace.name)
+        keyspace.drop(sut_query_executor)
+        keyspace.drop(oracle_query_executor)
     keyspace.create(sut_query_executor)
     keyspace.create(oracle_query_executor)
     processes = []
