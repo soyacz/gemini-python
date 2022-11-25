@@ -1,6 +1,7 @@
 # pylint: disable=no-value-for-parameter
 import ipaddress
 import logging
+import re
 import click
 
 from gemini_python.executor import QueryExecutorFactory
@@ -10,6 +11,35 @@ from gemini_python.schema import generate_schema
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger(__name__)
+
+
+duration_pattern = re.compile(r"(?P<hours>[\d]*)h|(?P<minutes>[\d]*)m|(?P<seconds>[\d]*)s")
+
+
+def time_period_str_to_seconds(time_period_string: str) -> int:
+    """Transforms duration string into seconds int. e.g. 1h -> 3600, 1h22m->4920 or 10m->600"""
+    try:
+        return int(time_period_string)
+    except ValueError:
+        pass
+    seconds = sum(
+        int(g[0] or 0) * 3600 + int(g[1] or 0) * 60 + int(g[2] or 0)
+        for g in duration_pattern.findall(time_period_string)
+    )
+    return seconds
+
+
+# pylint: disable=unused-argument
+def validate_time_period(ctx: click.Context, param: click.Parameter, value: str) -> int:
+    try:
+        seconds = time_period_str_to_seconds(value)
+        if not seconds:
+            raise ValueError
+    except ValueError as exc:
+        raise click.BadParameter(
+            f"'{value}' is not valid time string for {param.name}. Example valid: '1h44m22s' or just number, e.g. '320'"
+        ) from exc
+    return seconds
 
 
 def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list[str]:
@@ -52,17 +82,17 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list
     help="Comma separated host names or IPs of the test cluster that is system under test",
 )
 @click.option(
-    "--queries-count",
-    "-q",
-    type=int,
-    default=1000,
-    help="Temporary param for limiting number of executed queries",
+    "--duration",
+    type=str,
+    default="30s",
+    callback=validate_time_period,
+    help="duration in time format string e.g. 1h22m33s",
 )
 def run(
     mode: str = "write",
     test_cluster: list[str] | None = None,
     oracle_cluster: list[str] | None = None,
-    queries_count: int = 1000,
+    duration: int = 30,
 ) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     keyspace = generate_schema()
@@ -79,7 +109,7 @@ def run(
             mode=mode,
             test_cluster=test_cluster,
             oracle_cluster=oracle_cluster,
-            queries_count=queries_count,
+            duration=duration,
         )
         gemini_process.start()
         processes.append(gemini_process)
