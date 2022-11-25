@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from gemini_python.column_types import Column, AsciiColumn, BigIntColumn
+from gemini_python.executor import QueryExecutor
 
 
 @dataclass
@@ -33,13 +34,14 @@ class Table:
 
 @dataclass
 class Keyspace:
-    """Represents Scylla keyspace"""
+    """Represents Scylla keyspace with tables"""
 
     name: str
     replication_strategy: str
     tables: list[Table]
 
-    def as_cql(self) -> list[str]:
+    def as_cqls(self) -> list[str]:
+        # todo: should return Query class
         statements = [
             f"CREATE KEYSPACE IF NOT EXISTS {self.name} "
             f"with replication = {self.replication_strategy};"
@@ -47,6 +49,17 @@ class Keyspace:
         for table in self.tables:
             statements.append(table.as_cql())
         return statements
+
+    def create(self, query_executor: QueryExecutor) -> None:
+        """Creates keyspace with tables in database."""
+        for statement in self.as_cqls():
+            query_executor.execute(statement)
+        # todo: validate/wait schema was created?
+
+    def drop(self, query_executor: QueryExecutor) -> None:
+        """Drops whole keyspace"""
+        query_executor.execute(f"drop keyspace if exists {self.name}")
+        # todo: validate/wait for drop schema?
 
 
 def generate_schema() -> Keyspace:

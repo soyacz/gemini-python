@@ -6,6 +6,7 @@ from typing import Callable, Iterable
 
 from cassandra.cluster import Cluster, DCAwareRoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement  # type: ignore
+from cassandra.io.libevreactor import LibevConnection  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +34,13 @@ class CqlQueryExecutor(QueryExecutor):
     """Communicates with and queries Scylla/Cassandra databases."""
 
     def __init__(self, hosts: list[str], port: int = 9042) -> None:
+        kwargs = {"metrics_enabled": False, "connection_class": LibevConnection}
         self.cluster = Cluster(
             hosts,
             port=port,
             load_balancing_policy=DCAwareRoundRobinPolicy(local_dc="datacenter1"),
             protocol_version=4,
+            **kwargs
         )
         self.session = self.cluster.connect()
 
@@ -64,7 +67,8 @@ class CqlQueryExecutor(QueryExecutor):
         future = self.session.execute_async(query=prepared_statement, parameters=query_values)
         for callback in on_success:
             future.add_callback(callback)
-        future.add_errback(on_error)
+        for err_callback in on_error:
+            future.add_errback(err_callback)
 
     def execute(self, statement: str, query_values: tuple = ()) -> Iterable | None:
         """Executes statement synchronously."""
@@ -77,3 +81,23 @@ class CqlQueryExecutor(QueryExecutor):
 
 class NoOpQueryExecutor(QueryExecutor):
     """Does nothing. Used when no oracle is configured."""
+
+    def execute_async(
+        self,
+        statement: str,
+        query_values: tuple,
+        on_success: list[Callable[[Iterable | None], None]],
+        on_error: list[Callable[[Exception], None]],
+    ) -> None:
+        for callback in on_success:
+            callback(None)
+
+
+class QueryExecutorFactory:
+    """Creates QueryExecutor objects according to cluster parameters."""
+
+    @classmethod
+    def create_executor(cls, cluster_ips: list[str] | None = None) -> QueryExecutor:
+        if cluster_ips:
+            return CqlQueryExecutor(cluster_ips)
+        return NoOpQueryExecutor()

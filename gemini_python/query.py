@@ -31,6 +31,7 @@ class InsertQueryGenerator(QueryGenerator):
         return self
 
     def __next__(self) -> tuple[str, tuple]:
+        # todo: should return Query class
         return self._stmt, tuple(
             column.generate_sequence_value() for column in self._table.all_columns
         )
