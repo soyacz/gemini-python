@@ -2,10 +2,13 @@
 import ipaddress
 import logging
 import re
+from typing import List
+
 import click
 
 from gemini_python.executor import QueryExecutorFactory
 from gemini_python.gemini_process import GeminiProcess
+from gemini_python.load_generator import QueryMode
 from gemini_python.schema import generate_schema
 
 
@@ -42,7 +45,7 @@ def validate_time_period(ctx: click.Context, param: click.Parameter, value: str)
     return seconds
 
 
-def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list[str]:
+def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List[str] | None:
     # pylint: disable=unused-argument
     if value is None:
         click.echo(
@@ -63,8 +66,9 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list
 @click.command(context_settings={"show_default": True})
 @click.option(
     "--mode",
-    type=click.Choice(choices=("write", "read", "mixed"), case_sensitive=False),
-    default="write",
+    type=click.Choice(tuple(member.lower() for member in QueryMode.__members__)),
+    default=QueryMode.WRITE.value,
+    callback=lambda c, p, v: getattr(QueryMode, v.upper()),
     help="Query operation mode",
 )
 @click.option(
@@ -96,9 +100,9 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> list
     help="duration in time format string e.g. 1h22m33s",
 )
 def run(
-    mode: str = "write",
-    test_cluster: list[str] | None = None,
-    oracle_cluster: list[str] | None = None,
+    mode: QueryMode = QueryMode.WRITE,
+    test_cluster: List[str] | None = None,
+    oracle_cluster: List[str] | None = None,
     duration: int = 30,
     drop_schema: bool = False,
 ) -> None:

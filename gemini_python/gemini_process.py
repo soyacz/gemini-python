@@ -1,12 +1,13 @@
 import logging
 import time
 from multiprocessing import Process
+from typing import List
 
 from gemini_python.executor import (
     QueryExecutorFactory,
 )
 from gemini_python.limiter import ConcurrencyLimiter
-from gemini_python.load_generator import LoadGenerator
+from gemini_python.load_generator import LoadGenerator, QueryMode
 from gemini_python.schema import Keyspace
 from gemini_python.validator import GeminiValidator
 
@@ -28,10 +29,10 @@ class GeminiProcess(Process):
     def __init__(
         self,
         schema: Keyspace,
-        mode: str,
-        test_cluster: list[str] | None,
-        oracle_cluster: list[str] | None,
-        duration: int = 10000,
+        mode: QueryMode,
+        test_cluster: List[str] | None = None,
+        oracle_cluster: List[str] | None = None,
+        duration: int = 30,
     ):
         super().__init__()
         self._mode = mode
@@ -62,3 +63,12 @@ class GeminiProcess(Process):
             executed_queries_count += 1
         logger.info("inserted %s rows in %s seconds", executed_queries_count, self._duration)
         logger.info("%s statements/s", round(executed_queries_count / self._duration))
+
+
+if __name__ == "__main__":
+    # for testing purposes to verify single gemini process
+    logging.getLogger().addHandler(logging.StreamHandler())
+    from gemini_python.schema import generate_schema
+
+    keyspace = generate_schema()
+    GeminiProcess(schema=keyspace, mode=QueryMode.READ, duration=3).run()

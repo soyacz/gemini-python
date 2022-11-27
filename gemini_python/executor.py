@@ -2,7 +2,7 @@
 import logging
 from abc import ABC
 from functools import lru_cache
-from typing import Callable, Iterable
+from typing import Callable, Iterable, List
 
 from cassandra.cluster import Cluster, DCAwareRoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement  # type: ignore
@@ -19,8 +19,8 @@ class QueryExecutor(ABC):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: list[Callable[[Iterable | None], None]],
-        on_error: list[Callable[[Exception], None]],
+        on_success: List[Callable[[Iterable | None], None]],
+        on_error: List[Callable[[Exception], None]],
     ) -> None:
         """Execute statement asynchronously."""
 
@@ -34,7 +34,7 @@ class QueryExecutor(ABC):
 class CqlQueryExecutor(QueryExecutor):
     """Communicates with and queries Scylla/Cassandra databases."""
 
-    def __init__(self, hosts: list[str], port: int = 9042) -> None:
+    def __init__(self, hosts: List[str], port: int = 9042) -> None:
         kwargs = {"metrics_enabled": False, "connection_class": LibevConnection}
         self.cluster = Cluster(
             hosts,
@@ -56,8 +56,8 @@ class CqlQueryExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: list[Callable[[Iterable | None], None]],
-        on_error: list[Callable[[Exception], None]],
+        on_success: List[Callable[[Iterable | None], None]],
+        on_error: List[Callable[[Exception], None]],
     ) -> None:
         """Executes cql statement with given values asynchronously
         and run callbacks on success/failure"""
@@ -85,8 +85,8 @@ class NoOpQueryExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: list[Callable[[Iterable | None], None]],
-        on_error: list[Callable[[Exception], None]],
+        on_success: List[Callable[[Iterable | None], None]],
+        on_error: List[Callable[[Exception], None]],
     ) -> None:
         for callback in on_success:
             callback(None)
@@ -96,7 +96,7 @@ class QueryExecutorFactory:
     """Creates QueryExecutor objects according to cluster parameters."""
 
     @classmethod
-    def create_executor(cls, cluster_ips: list[str] | None = None) -> QueryExecutor:
+    def create_executor(cls, cluster_ips: List[str] | None = None) -> QueryExecutor:
         if cluster_ips:
             return CqlQueryExecutor(cluster_ips)
         return NoOpQueryExecutor()

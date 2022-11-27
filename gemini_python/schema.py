@@ -39,9 +39,9 @@ class Keyspace:
 
     name: str
     replication_strategy: str
-    tables: list[Table]
+    tables: List[Table]
 
-    def as_queries(self) -> list[CqlDto]:
+    def as_queries(self) -> List[CqlDto]:
         queries = [
             CqlDto(
                 f"CREATE KEYSPACE IF NOT EXISTS {self.name} "

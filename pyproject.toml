@@ -17,6 +17,7 @@ black = "^22.6.0"
 mypy = "^0.971"
 pytest = "^7.1.2"
 pre-commit = "^2.20.0"
+setuptools = "^65.6.3"
 
 [tool.poetry.scripts]
 gemini = 'gemini_python.console:run'
