@@ -1,4 +1,4 @@
-import queue
+import threading
 from abc import ABC
 from typing import Iterable
 
@@ -15,31 +15,22 @@ class Limiter(ABC):
         """Decreases value.
         This lets increment method to proceed in case of waiting for value drop."""
 
-    # noinspection PyPropertyDefinition
-    @property
-    def value(self) -> int:
-        """Shows current value."""
-
 
 class ConcurrencyLimiter(Limiter):
     """Limits number of concurrent async calls"""
 
     def __init__(self, limit: int = 10) -> None:
-        self._queue: queue.Queue[str] = queue.Queue(maxsize=limit)
+        self._semaphore: threading.Semaphore = threading.Semaphore(limit)
 
     def increment(self, timeout: int = 5) -> None:
         """Increments running async executions counter.
 
         If limit is reached, waits for decrement."""
-        try:
-            self._queue.put("", timeout=timeout)
-        except queue.Full as exc:
-            raise TimeoutError("Timeout during waiting for async executor.") from exc
+        # pylint: disable=consider-using-with
+        not_blocked = self._semaphore.acquire(blocking=True, timeout=timeout)
+        if not not_blocked:
+            raise TimeoutError("Timeout during waiting for async executor.")
 
     def decrement(self, _: Iterable | Exception | None = None) -> None:
         """Decrements running async executions counter."""
-        self._queue.get(block=False)
-
-    @property
-    def value(self) -> int:
-        return self._queue.qsize()
+        self._semaphore.release()

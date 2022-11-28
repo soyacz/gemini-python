@@ -50,7 +50,7 @@ class GeminiProcess(Process):
         oracle_query_executor = QueryExecutorFactory.create_executor(self._oracle_cluster)
         validator = GeminiValidator(oracle=oracle_query_executor)
         generator = LoadGenerator(schema=self._schema, mode=self._mode)
-        concurrency = ConcurrencyLimiter(limit=100)
+        concurrency = ConcurrencyLimiter(limit=200)
         while time.time() - start_time < self._duration:
             concurrency.increment()
             cql_dto = generator.get_query()
