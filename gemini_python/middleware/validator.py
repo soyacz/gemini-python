@@ -1,9 +1,13 @@
+import logging
 from functools import partial
 from itertools import zip_longest
-from typing import Callable, Iterable
+from typing import Iterable, Callable, Tuple
 
-from gemini_python.executor import QueryExecutor, logger, NoOpQueryExecutor
-from gemini_python import CqlDto
+from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, do_nothing
+from gemini_python.executor import QueryExecutorFactory, NoOpQueryExecutor, QueryExecutor
+from gemini_python.middleware import Middleware
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiValidator:
@@ -42,3 +46,16 @@ class GeminiValidator:
             on_success=[validate_fun],
             on_error=[logger.exception],
         )
+
+
+class Validator(Middleware):
+    """Middleware for SUT query result comparison with oracle's query result."""
+
+    def __init__(self, config: GeminiConfiguration) -> None:
+        super().__init__(config)
+        self._gemini_validator = GeminiValidator(
+            QueryExecutorFactory.create_executor(self._config.oracle_cluster)
+        )
+
+    def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
+        return self._gemini_validator.prepare_validation_method(cql_dto), do_nothing

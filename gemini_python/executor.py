@@ -2,13 +2,13 @@
 import logging
 from abc import ABC
 from functools import lru_cache
-from typing import Callable, Iterable, List
+from typing import Iterable, List
 
 from cassandra.cluster import Cluster, DCAwareRoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement  # type: ignore
 from cassandra.io.libevreactor import LibevConnection  # type: ignore
 
-from gemini_python import CqlDto
+from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,8 @@ class QueryExecutor(ABC):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: List[Callable[[Iterable | None], None]],
-        on_error: List[Callable[[Exception], None]],
+        on_success: List[OnSuccessClb],
+        on_error: List[OnErrorClb],
     ) -> None:
         """Execute statement asynchronously."""
 
@@ -56,14 +56,12 @@ class CqlQueryExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: List[Callable[[Iterable | None], None]],
-        on_error: List[Callable[[Exception], None]],
+        on_success: List[OnSuccessClb],
+        on_error: List[OnErrorClb],
     ) -> None:
         """Executes cql statement with given values asynchronously
         and run callbacks on success/failure"""
         prepared_statement = self._prepare_statement(cql_dto.statement)
-        # todo: execute_async of python driver somehow does not work
-        #  - there's almost no benefit of concurrency
         future = self.session.execute_async(query=prepared_statement, parameters=cql_dto.values)
         for callback in on_success:
             future.add_callback(callback)
@@ -85,8 +83,8 @@ class NoOpQueryExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: List[Callable[[Iterable | None], None]],
-        on_error: List[Callable[[Exception], None]],
+        on_success: List[OnSuccessClb],
+        on_error: List[OnErrorClb],
     ) -> None:
         for callback in on_success:
             callback(None)

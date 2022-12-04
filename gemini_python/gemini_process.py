@@ -1,15 +1,16 @@
 import logging
 import time
 from multiprocessing import Process
-from typing import List
 
+from gemini_python import GeminiConfiguration, QueryMode
 from gemini_python.executor import (
     QueryExecutorFactory,
 )
-from gemini_python.limiter import ConcurrencyLimiter
-from gemini_python.load_generator import LoadGenerator, QueryMode
+from gemini_python.load_generator import LoadGenerator
+from gemini_python.middleware import init_middlewares, run_middlewares
+from gemini_python.middleware.concurrency_limiter import ConcurrencyLimiterMiddleware
+from gemini_python.middleware.validator import Validator
 from gemini_python.schema import Keyspace
-from gemini_python.validator import GeminiValidator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,43 +27,29 @@ class GeminiProcess(Process):
     queries_count param is temporary for limiting time gemini is executed.
     """
 
-    def __init__(
-        self,
-        schema: Keyspace,
-        mode: QueryMode,
-        test_cluster: List[str] | None = None,
-        oracle_cluster: List[str] | None = None,
-        duration: int = 30,
-    ):
+    def __init__(self, config: GeminiConfiguration, schema: Keyspace):
         super().__init__()
-        self._mode = mode
+        self._config = config
         self._schema = schema
-        self._test_cluster = test_cluster
-        self._oracle_cluster = oracle_cluster
-        self._duration = duration
-        assert duration > 0, "duration should be greater than 0 seconds"
+        assert config.duration > 0, "duration should be greater than 0 seconds"
 
     def run(self) -> None:
         executed_queries_count = 0
         start_time = time.time()
         # executors must be created in run() method, otherwise cassandra driver hangs
-        sut_query_executor = QueryExecutorFactory.create_executor(self._test_cluster)
-        oracle_query_executor = QueryExecutorFactory.create_executor(self._oracle_cluster)
-        validator = GeminiValidator(oracle=oracle_query_executor)
-        generator = LoadGenerator(schema=self._schema, mode=self._mode)
-        concurrency = ConcurrencyLimiter(limit=200)
-        while time.time() - start_time < self._duration:
-            concurrency.increment()
+        sut_query_executor = QueryExecutorFactory.create_executor(self._config.test_cluster)
+        generator = LoadGenerator(schema=self._schema, mode=self._config.mode)
+        middlewares = init_middlewares(self._config, [ConcurrencyLimiterMiddleware, Validator])
+        while time.time() - start_time < self._config.duration:
             cql_dto = generator.get_query()
-            validate_results = validator.prepare_validation_method(cql_dto)
+            on_success_callbacks, on_error_callbacks = run_middlewares(cql_dto, middlewares)
             sut_query_executor.execute_async(
                 cql_dto,
-                on_success=[concurrency.decrement, validate_results],
-                on_error=[concurrency.decrement, handle_exception],
+                on_success=on_success_callbacks,
+                on_error=on_error_callbacks + [handle_exception],
             )
             executed_queries_count += 1
-        logger.info("inserted %s rows in %s seconds", executed_queries_count, self._duration)
-        logger.info("%s statements/s", round(executed_queries_count / self._duration))
+        logger.info("%s statements/s", round(executed_queries_count / self._config.duration))
 
 
 if __name__ == "__main__":
@@ -71,4 +58,6 @@ if __name__ == "__main__":
     from gemini_python.schema import generate_schema
 
     keyspace = generate_schema()
-    GeminiProcess(schema=keyspace, mode=QueryMode.READ, duration=3).run()
+    GeminiProcess(
+        config=GeminiConfiguration(mode=QueryMode.READ, duration=3), schema=keyspace
+    ).run()

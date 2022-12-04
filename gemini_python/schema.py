@@ -56,12 +56,10 @@ class Keyspace:
         """Creates keyspace with tables in database."""
         for statement in self.as_queries():
             query_executor.execute(statement)
-        # todo: validate/wait schema was created?
 
     def drop(self, query_executor: QueryExecutor) -> None:
         """Drops whole keyspace"""
         query_executor.execute(CqlDto(f"drop keyspace if exists {self.name}"))
-        # todo: validate/wait for drop schema?
 
 
 def generate_schema() -> Keyspace:

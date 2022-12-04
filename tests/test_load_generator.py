@@ -1,4 +1,5 @@
-from gemini_python.load_generator import LoadGenerator, QueryMode
+from gemini_python import QueryMode
+from gemini_python.load_generator import LoadGenerator
 from gemini_python.schema import generate_schema
 
 

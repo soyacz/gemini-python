@@ -2,13 +2,13 @@
 import ipaddress
 import logging
 import re
-from typing import List
+from typing import List, Any
 
 import click
 
+from gemini_python import GeminiConfiguration, QueryMode
 from gemini_python.executor import QueryExecutorFactory
 from gemini_python.gemini_process import GeminiProcess
-from gemini_python.load_generator import QueryMode
 from gemini_python.schema import generate_schema
 
 
@@ -95,22 +95,17 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
 @click.option(
     "--duration",
     type=str,
-    default="30s",
+    default="3s",
     callback=validate_time_period,
     help="duration in time format string e.g. 1h22m33s",
 )
-def run(
-    mode: QueryMode = QueryMode.WRITE,
-    test_cluster: List[str] | None = None,
-    oracle_cluster: List[str] | None = None,
-    duration: int = 30,
-    drop_schema: bool = False,
-) -> None:
+def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
+    config = GeminiConfiguration(*args, **kwargs)
     keyspace = generate_schema()
-    sut_query_executor = QueryExecutorFactory.create_executor(test_cluster)
-    oracle_query_executor = QueryExecutorFactory.create_executor(oracle_cluster)
-    if drop_schema:
+    sut_query_executor = QueryExecutorFactory.create_executor(config.test_cluster)
+    oracle_query_executor = QueryExecutorFactory.create_executor(config.oracle_cluster)
+    if config.drop_schema:
         logger.info("dropping schema %s", keyspace.name)
         keyspace.drop(sut_query_executor)
         keyspace.drop(oracle_query_executor)
@@ -118,13 +113,7 @@ def run(
     keyspace.create(oracle_query_executor)
     processes = []
     for _ in range(1):
-        gemini_process = GeminiProcess(
-            schema=keyspace,
-            mode=mode,
-            test_cluster=test_cluster,
-            oracle_cluster=oracle_cluster,
-            duration=duration,
-        )
+        gemini_process = GeminiProcess(config, keyspace)
         gemini_process.start()
         processes.append(gemini_process)
     for gemini_process in processes:

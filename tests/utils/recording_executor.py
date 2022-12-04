@@ -1,7 +1,7 @@
-from typing import Callable, Iterable, List
+from typing import List
 
 from gemini_python.executor import QueryExecutor
-from gemini_python import CqlDto
+from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 
 class RecordingExecutor(QueryExecutor):
@@ -16,8 +16,8 @@ class RecordingExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: List[Callable[[Iterable | None], None]],
-        on_error: List[Callable[[Exception], None]],
+        on_success: List[OnSuccessClb],
+        on_error: List[OnErrorClb],
     ) -> None:
         self.executed_queries.append(cql_dto)
         for callback in on_success:

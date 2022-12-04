@@ -21,5 +21,7 @@ scripts/run_mypy.sh
 pylint gemini_python
 pytest .
 
+# also worth to check coverage:
+coverage run --source=gemini_python -m pytest .
 
 ```

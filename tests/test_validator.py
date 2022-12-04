@@ -1,6 +1,6 @@
 from gemini_python import CqlDto
 from gemini_python.executor import NoOpQueryExecutor
-from gemini_python.validator import GeminiValidator
+from gemini_python.middleware.validator import GeminiValidator
 from tests.utils.memory_executor import MemoryExecutor
 
 

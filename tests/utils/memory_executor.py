@@ -1,7 +1,7 @@
-from typing import Any, Callable, Iterable, List
+from typing import Any, List
 
 from gemini_python.executor import QueryExecutor
-from gemini_python import CqlDto
+from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 
 class MemoryExecutor(QueryExecutor):
@@ -14,8 +14,8 @@ class MemoryExecutor(QueryExecutor):
     def execute_async(
         self,
         cql_dto: CqlDto,
-        on_success: List[Callable[[Iterable | None], None]],
-        on_error: List[Callable[[Any], None]],
+        on_success: List[OnSuccessClb],
+        on_error: List[OnErrorClb],
     ) -> None:
         if cql_dto.statement == "insert":
             self._data.append(cql_dto.values)

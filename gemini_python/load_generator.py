@@ -1,16 +1,6 @@
-from enum import Enum, unique
-
-from gemini_python import CqlDto
+from gemini_python import CqlDto, QueryMode
 from gemini_python.query import InsertQueryGenerator, SelectQueryGenerator
 from gemini_python.schema import Keyspace
-
-
-@unique
-class QueryMode(Enum):
-    """Query operation mode available options"""
-
-    WRITE = "write"
-    READ = "read"
 
 
 class LoadGenerator:
