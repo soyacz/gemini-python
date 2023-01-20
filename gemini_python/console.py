@@ -63,7 +63,14 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
     return ips
 
 
-@click.command(context_settings={"show_default": True})
+# Remove: "ignore_unknown_options": True, "allow_extra_args": True, when full compatibility is reached
+@click.command(
+    context_settings={
+        "show_default": True,
+        "ignore_unknown_options": True,
+        "allow_extra_args": True,
+    }
+)
 @click.option(
     "--mode",
     type=click.Choice(tuple(member.lower() for member in QueryMode.__members__)),
@@ -112,7 +119,7 @@ def run(*args: Any, **kwargs: Any) -> None:
     keyspace.create(sut_query_executor)
     keyspace.create(oracle_query_executor)
     processes = []
-    for _ in range(1):
+    for _ in range(4):
         gemini_process = GeminiProcess(config, keyspace)
         gemini_process.start()
         processes.append(gemini_process)

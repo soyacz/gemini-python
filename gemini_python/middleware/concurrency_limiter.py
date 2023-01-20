@@ -29,7 +29,7 @@ class ConcurrencyLimiterMiddleware(Middleware):
 
     def __init__(self, config: GeminiConfiguration) -> None:
         super().__init__(config=config)
-        self._limiter = ConcurrencyLimiter(limit=200)
+        self._limiter = ConcurrencyLimiter(limit=50)
         self._timeout: int = 5
 
     # pylint: disable=unused-argument
