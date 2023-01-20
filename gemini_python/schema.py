@@ -4,6 +4,7 @@ from typing import List
 from gemini_python.column_types import Column, AsciiColumn, BigIntColumn
 from gemini_python.executor import QueryExecutor
 from gemini_python import CqlDto
+from gemini_python.replication_strategy import ReplicationStrategy
 
 
 @dataclass
@@ -38,23 +39,24 @@ class Keyspace:
     """Represents Scylla keyspace with tables"""
 
     name: str
-    replication_strategy: str
     tables: List[Table]
 
-    def as_queries(self) -> List[CqlDto]:
+    def as_queries(self, replication_strategy: ReplicationStrategy) -> List[CqlDto]:
         queries = [
             CqlDto(
                 f"CREATE KEYSPACE IF NOT EXISTS {self.name} "
-                f"with replication = {self.replication_strategy};"
+                f"with replication = {replication_strategy};"
             )
         ]
         for table in self.tables:
             queries.append(table.as_query())
         return queries
 
-    def create(self, query_executor: QueryExecutor) -> None:
+    def create(
+        self, query_executor: QueryExecutor, replication_strategy: ReplicationStrategy
+    ) -> None:
         """Creates keyspace with tables in database."""
-        for statement in self.as_queries():
+        for statement in self.as_queries(replication_strategy):
             query_executor.execute(statement)
 
     def drop(self, query_executor: QueryExecutor) -> None:
@@ -67,7 +69,6 @@ def generate_schema() -> Keyspace:
     ks_name = "gemini"
     return Keyspace(
         name=ks_name,
-        replication_strategy="{'class': 'SimpleStrategy', 'replication_factor' : 3}",
         tables=[
             Table(
                 name="table1",

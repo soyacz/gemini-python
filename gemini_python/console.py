@@ -9,6 +9,7 @@ import click
 from gemini_python import GeminiConfiguration, QueryMode
 from gemini_python.executor import QueryExecutorFactory
 from gemini_python.gemini_process import GeminiProcess
+from gemini_python.replication_strategy import SimpleReplicationStrategy
 from gemini_python.schema import generate_schema
 
 
@@ -116,10 +117,10 @@ def run(*args: Any, **kwargs: Any) -> None:
         logger.info("dropping schema %s", keyspace.name)
         keyspace.drop(sut_query_executor)
         keyspace.drop(oracle_query_executor)
-    keyspace.create(sut_query_executor)
-    keyspace.create(oracle_query_executor)
+    keyspace.create(sut_query_executor, replication_strategy=SimpleReplicationStrategy(3))
+    keyspace.create(oracle_query_executor, replication_strategy=SimpleReplicationStrategy(1))
     processes = []
-    for _ in range(4):
+    for _ in range(1):
         gemini_process = GeminiProcess(config, keyspace)
         gemini_process.start()
         processes.append(gemini_process)
