@@ -1,8 +1,11 @@
+import logging
 import threading
 from typing import Iterable, Tuple, Any
 
 from gemini_python import OnSuccessClb, OnErrorClb, GeminiConfiguration
 from gemini_python.middleware import Middleware
+
+logger = logging.getLogger(__name__)
 
 
 class ConcurrencyLimiter:
@@ -29,10 +32,18 @@ class ConcurrencyLimiterMiddleware(Middleware):
 
     def __init__(self, config: GeminiConfiguration) -> None:
         super().__init__(config=config)
-        self._limiter = ConcurrencyLimiter(limit=50)
+        self._limit = 50
+        self._limiter = ConcurrencyLimiter(limit=self._limit)
         self._timeout: int = 5
 
     # pylint: disable=unused-argument
     def run(self, *args: Any, **kwargs: Any) -> Tuple[OnSuccessClb, OnErrorClb]:
         self._limiter.acquire(timeout=self._timeout)
         return self._limiter.release, self._limiter.release
+
+    def teardown(self) -> None:
+        """Acquire all the semaphores - to assure no one is using it."""
+        logger.debug("Waiting for all concurrent threads to release semaphores.")
+        for _ in range(self._limit):
+            self._limiter.acquire(timeout=self._timeout)
+        logger.debug("All semaphores releaed")

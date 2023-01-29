@@ -49,6 +49,6 @@ class BigIntColumn(Column):
     def generate_random_value(self) -> Any:
         return random.randint(-sys.maxsize - 1, sys.maxsize)
 
-    def generate_sequence_value(self) -> Any:
+    def generate_sequence_value(self) -> int:
         self._seq += 1
         return self._seq

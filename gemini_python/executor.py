@@ -30,6 +30,9 @@ class QueryExecutor(ABC):
     def prepare(self, statement: str) -> None:
         """Preparation before running statement."""
 
+    def teardown(self) -> None:
+        """Proper query executor shutdown, closing all connections, feeing resources."""
+
 
 class CqlQueryExecutor(QueryExecutor):
     """Communicates with and queries Scylla/Cassandra databases."""
@@ -72,9 +75,12 @@ class CqlQueryExecutor(QueryExecutor):
         """Executes statement synchronously."""
         return self.session.execute(cql_dto.statement, parameters=cql_dto.values)  # type: ignore
 
-    def __del__(self) -> None:
-        logger.info("Closing connection to %s", self.cluster.metadata.all_hosts())
+    def teardown(self) -> None:
+        logger.debug("Closing connection with %s", self.cluster.metadata.all_hosts())
         self.cluster.shutdown()
+
+    def __del__(self) -> None:
+        self.teardown()
 
 
 class NoOpQueryExecutor(QueryExecutor):

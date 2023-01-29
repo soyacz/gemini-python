@@ -107,6 +107,19 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
     callback=validate_time_period,
     help="duration in time format string e.g. 1h22m33s",
 )
+@click.option(
+    "--token-range-slices",
+    type=int,
+    default=10000,
+    help="Number of slices to divide the token space into",
+)
+@click.option(
+    "--concurrency",
+    "-c",
+    type=int,
+    default=4,
+    help="Number of concurrent processes",
+)
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
@@ -120,10 +133,11 @@ def run(*args: Any, **kwargs: Any) -> None:
     keyspace.create(sut_query_executor, replication_strategy=SimpleReplicationStrategy(3))
     keyspace.create(oracle_query_executor, replication_strategy=SimpleReplicationStrategy(1))
     processes = []
-    for _ in range(1):
+    for _ in range(config.concurrency):
         gemini_process = GeminiProcess(config, keyspace)
-        gemini_process.start()
         processes.append(gemini_process)
+    for gemini_process in processes:
+        gemini_process.start()
     for gemini_process in processes:
         gemini_process.join()
 

@@ -13,6 +13,9 @@ class Middleware(ABC):
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
         """CAUTION: own middleware state modification callbacks must be thread safe."""
 
+    def teardown(self) -> None:
+        """Executed after gemini finishes"""
+
 
 def init_middlewares(
     config: GeminiConfiguration, middlewares: List[Type[Middleware]]

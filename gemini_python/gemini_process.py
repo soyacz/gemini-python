@@ -31,14 +31,28 @@ class GeminiProcess(Process):
         super().__init__()
         self._config = config
         self._schema = schema
+        self._partitions = self._generate_partitions()
         assert config.duration > 0, "duration should be greater than 0 seconds"
+
+    def _generate_partitions(self) -> list[list[tuple]]:
+        tables_partitions: list[list[tuple]] = []
+        for table in self._schema.tables:
+            tables_partitions.append(
+                [
+                    tuple(column.generate_random_value() for column in table.primary_keys)
+                    for _ in range(self._config.token_range_slices // self._config.concurrency)
+                ]
+            )
+        return tables_partitions
 
     def run(self) -> None:
         executed_queries_count = 0
         start_time = time.time()
         # executors must be created in run() method, otherwise cassandra driver hangs
         sut_query_executor = QueryExecutorFactory.create_executor(self._config.test_cluster)
-        generator = LoadGenerator(schema=self._schema, mode=self._config.mode)
+        generator = LoadGenerator(
+            schema=self._schema, mode=self._config.mode, partitions=self._partitions
+        )
         middlewares = init_middlewares(self._config, [ConcurrencyLimiterMiddleware, Validator])
         while time.time() - start_time < self._config.duration:
             cql_dto = generator.get_query()
@@ -50,6 +64,9 @@ class GeminiProcess(Process):
             )
             executed_queries_count += 1
         logger.info("%s statements/s", round(executed_queries_count / self._config.duration))
+        for middleware in middlewares:
+            middleware.teardown()
+        sut_query_executor.teardown()
 
 
 if __name__ == "__main__":

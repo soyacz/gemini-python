@@ -1,9 +1,10 @@
 import logging
 from functools import partial
 from itertools import zip_longest
+from time import sleep
 from typing import Iterable, Callable, Tuple
 
-from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, do_nothing
+from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, log_error
 from gemini_python.executor import QueryExecutorFactory, NoOpQueryExecutor, QueryExecutor
 from gemini_python.middleware import Middleware
 
@@ -47,6 +48,9 @@ class GeminiValidator:
             on_error=[logger.exception],
         )
 
+    def teardown(self) -> None:
+        self._oracle.teardown()
+
 
 class Validator(Middleware):
     """Middleware for SUT query result comparison with oracle's query result."""
@@ -58,4 +62,10 @@ class Validator(Middleware):
         )
 
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
-        return self._gemini_validator.prepare_validation_method(cql_dto), do_nothing
+        return self._gemini_validator.prepare_validation_method(cql_dto), log_error
+
+    def teardown(self) -> None:
+        # after gemini process ends, still there are pending queries in oracle.
+        # todo: replace sleep with more reliable solution that waits for all the queries complete
+        sleep(3)
+        self._gemini_validator.teardown()

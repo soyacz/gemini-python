@@ -1,6 +1,9 @@
+import logging
 from dataclasses import dataclass
 from enum import unique, Enum
 from typing import List, Callable, Iterable, Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -28,11 +31,18 @@ class GeminiConfiguration:
     oracle_cluster: List[str] | None = None
     duration: int = 3
     drop_schema: bool = False
+    token_range_slices: int = 10000
+    concurrency: int = 4
 
 
 # pylint: disable=unused-argument
 def do_nothing(*args: Any, **kwargs: Any) -> None:
     """Does nothing. May be sometimes required."""
+
+
+def log_error(*args: Any, **kwargs: Any) -> None:
+    """Logging error callback"""
+    logger.error("error: %s, %s", args, kwargs)
 
 
 OnSuccessClb = Callable[[Iterable | None], None]
