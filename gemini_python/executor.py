@@ -12,6 +12,7 @@ from cassandra.io.libevreactor import LibevConnection  # type: ignore
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class QueryExecutor(ABC):

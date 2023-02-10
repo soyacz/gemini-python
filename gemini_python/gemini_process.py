@@ -74,7 +74,7 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(logging.StreamHandler())
     from gemini_python.schema import generate_schema
 
-    keyspace = generate_schema()
+    keyspace = generate_schema(seed=1234)
     GeminiProcess(
         config=GeminiConfiguration(mode=QueryMode.READ, duration=3), schema=keyspace
     ).run()

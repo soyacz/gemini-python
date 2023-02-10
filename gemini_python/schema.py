@@ -64,7 +64,7 @@ class Keyspace:
         query_executor.execute(CqlDto(f"drop keyspace if exists {self.name}"))
 
 
-def generate_schema() -> Keyspace:
+def generate_schema(seed: int) -> Keyspace:
     """Generates schema: Keyspace with tables."""
     ks_name = "gemini"
     return Keyspace(
@@ -73,8 +73,8 @@ def generate_schema() -> Keyspace:
             Table(
                 name="table1",
                 keyspace_name=ks_name,
-                primary_keys=[BigIntColumn(name="pk")],
-                columns=[AsciiColumn(name="col1")],
+                primary_keys=[BigIntColumn(name="pk", seed=seed)],
+                columns=[AsciiColumn(name="col1", seed=seed)],
             )
         ],
     )

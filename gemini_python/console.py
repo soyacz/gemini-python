@@ -120,10 +120,11 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
     default=4,
     help="Number of concurrent processes",
 )
+@click.option("--seed", "-s", type=int, default=0, help="PRNG seed value")
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
-    keyspace = generate_schema()
+    keyspace = generate_schema(seed=config.seed)
     sut_query_executor = QueryExecutorFactory.create_executor(config.test_cluster)
     oracle_query_executor = QueryExecutorFactory.create_executor(config.oracle_cluster)
     if config.drop_schema:

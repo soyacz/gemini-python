@@ -23,7 +23,7 @@ class QueryMode(Enum):
 
 
 @dataclass
-class GeminiConfiguration:
+class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     """Configuration parameters for Gemini"""
 
     mode: QueryMode = QueryMode.WRITE
@@ -33,6 +33,7 @@ class GeminiConfiguration:
     drop_schema: bool = False
     token_range_slices: int = 10000
     concurrency: int = 4
+    seed: int = 0
 
 
 # pylint: disable=unused-argument
