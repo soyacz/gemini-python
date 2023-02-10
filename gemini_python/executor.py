@@ -4,7 +4,8 @@ from abc import ABC
 from functools import lru_cache
 from typing import Iterable, List
 
-from cassandra.cluster import Cluster, DCAwareRoundRobinPolicy  # type: ignore
+from cassandra.cluster import Cluster  # type: ignore
+from cassandra.policies import RoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement  # type: ignore
 from cassandra.io.libevreactor import LibevConnection  # type: ignore
 
@@ -40,11 +41,7 @@ class CqlQueryExecutor(QueryExecutor):
     def __init__(self, hosts: List[str], port: int = 9042) -> None:
         kwargs = {"metrics_enabled": False, "connection_class": LibevConnection}
         self.cluster = Cluster(
-            hosts,
-            port=port,
-            load_balancing_policy=DCAwareRoundRobinPolicy(local_dc="datacenter1"),
-            protocol_version=4,
-            **kwargs
+            hosts, port=port, load_balancing_policy=RoundRobinPolicy(), protocol_version=4, **kwargs
         )
         self.session = self.cluster.connect()
 
