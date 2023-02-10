@@ -2,7 +2,7 @@ import logging
 import time
 from multiprocessing import Process
 
-from gemini_python import GeminiConfiguration, QueryMode
+from gemini_python import GeminiConfiguration
 from gemini_python.executor import (
     QueryExecutorFactory,
 )
@@ -67,14 +67,3 @@ class GeminiProcess(Process):
         for middleware in middlewares:
             middleware.teardown()
         sut_query_executor.teardown()
-
-
-if __name__ == "__main__":
-    # for testing purposes to verify single gemini process
-    logging.getLogger().addHandler(logging.StreamHandler())
-    from gemini_python.schema import generate_schema
-
-    keyspace = generate_schema(seed=1234)
-    GeminiProcess(
-        config=GeminiConfiguration(mode=QueryMode.READ, duration=3), schema=keyspace
-    ).run()

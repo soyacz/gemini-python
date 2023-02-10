@@ -552,6 +552,22 @@ tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-click"
+version = "1.1.0"
+description = "Pytest plugin for Click"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytest_click-1.1.0-py3-none-any.whl", hash = "sha256:eade4742c2f02c345e78a32534a43e8db04acf98d415090539dacc880b7cd0e9"},
+    {file = "pytest_click-1.1.0.tar.gz", hash = "sha256:fdd9f6721f877dda021e7c5dc73e70aecd37e5ed23ec6820f8a7b3fd7b4f8d30"},
+]
+
+[package.dependencies]
+click = ">=6.0"
+pytest = ">=5.0"
+
+[[package]]
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
@@ -823,4 +839,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "38d4f5b404e0a30115660c08aea12f9e93ace62e36e9c585dfe0e1ee3f971e99"
+content-hash = "1d82c34c98c239ed85329098a4ba77015a34f4bbccd086630221e6dfd1c12b1c"

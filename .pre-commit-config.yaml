@@ -19,6 +19,7 @@ repos:
           name: mypy
           language: system
           entry: ./scripts/run_mypy.sh
+          pass_filenames: false
 
         - id: pylint
           name: pylint
@@ -29,6 +30,15 @@ repos:
         - id: pytest
           name: pytest
           language: system
-          entry: pytest tests
+          entry: coverage run --rcfile ./pyproject.toml -m pytest ./tests
           types:
             - python
+          pass_filenames: false
+
+        - id: coverage
+          name: coverage
+          language: system
+          entry: coverage report --rcfile ./pyproject.toml
+          types:
+            - python
+          pass_filenames: false

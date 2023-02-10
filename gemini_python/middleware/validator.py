@@ -67,5 +67,6 @@ class Validator(Middleware):
     def teardown(self) -> None:
         # after gemini process ends, still there are pending queries in oracle.
         # todo: replace sleep with more reliable solution that waits for all the queries complete
-        sleep(3)
+        if self._config.oracle_cluster:
+            sleep(3)
         self._gemini_validator.teardown()
