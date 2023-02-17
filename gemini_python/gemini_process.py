@@ -9,6 +9,7 @@ from gemini_python.executor import (
 from gemini_python.load_generator import LoadGenerator
 from gemini_python.middleware import init_middlewares, run_middlewares
 from gemini_python.middleware.concurrency_limiter import ConcurrencyLimiterMiddleware
+from gemini_python.middleware.performance_counter import PerformanceCounterMiddleware
 from gemini_python.middleware.validator import Validator
 from gemini_python.schema import Keyspace
 
@@ -46,14 +47,15 @@ class GeminiProcess(Process):
         return tables_partitions
 
     def run(self) -> None:
-        executed_queries_count = 0
         start_time = time.time()
-        # executors must be created in run() method, otherwise cassandra driver hangs
+        # executors must be created in run() method and not in __init__, otherwise cassandra driver hangs
         sut_query_executor = QueryExecutorFactory.create_executor(self._config.test_cluster)
         generator = LoadGenerator(
             schema=self._schema, mode=self._config.mode, partitions=self._partitions
         )
-        middlewares = init_middlewares(self._config, [ConcurrencyLimiterMiddleware, Validator])
+        middlewares = init_middlewares(
+            self._config, [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware, Validator]
+        )
         while time.time() - start_time < self._config.duration:
             cql_dto = generator.get_query()
             on_success_callbacks, on_error_callbacks = run_middlewares(cql_dto, middlewares)
@@ -62,8 +64,6 @@ class GeminiProcess(Process):
                 on_success=on_success_callbacks,
                 on_error=on_error_callbacks + [handle_exception],
             )
-            executed_queries_count += 1
-        logger.info("%s statements/s", round(executed_queries_count / self._config.duration))
         for middleware in middlewares:
             middleware.teardown()
         sut_query_executor.teardown()
