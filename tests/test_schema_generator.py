@@ -1,11 +1,24 @@
-from gemini_python import CqlDto
+from gemini_python import CqlDto, GeminiConfiguration
+from gemini_python.column_types import BigIntColumn, AsciiColumn
 from gemini_python.replication_strategy import SimpleReplicationStrategy
 from gemini_python.schema import generate_schema
 from tests.utils.recording_executor import RecordingExecutor
 
 
 def test_schema_can_generate_keyspace_and_tables_ddl_queries():
-    keyspace = generate_schema(seed=1234)
+    config = GeminiConfiguration(
+        seed=1234,
+        min_columns=2,
+        max_columns=2,
+        max_clustering_keys=2,
+        max_partition_keys=2,
+    )
+    keyspace = generate_schema(
+        config,
+        pk_types=[AsciiColumn, BigIntColumn],
+        ck_types=[AsciiColumn, BigIntColumn],
+        c_types=[AsciiColumn, BigIntColumn],
+    )
     assert keyspace.name == "gemini"
     assert keyspace.tables
     queries = keyspace.as_queries(replication_strategy=SimpleReplicationStrategy(3))
@@ -15,15 +28,49 @@ def test_schema_can_generate_keyspace_and_tables_ddl_queries():
             "replication = {'class': 'SimpleStrategy', 'replication_factor': 3};"
         ),
         CqlDto(
-            "CREATE TABLE IF NOT EXISTS gemini.table1 (pk bigint, col1 ascii, PRIMARY KEY ((pk)));"
+            "CREATE TABLE IF NOT EXISTS gemini.table0"
+            " (pk0 ascii, pk1 ascii, ck0 ascii, ck1 ascii, col0 bigint, col1 ascii,"
+            " PRIMARY KEY ((pk0, pk1), ck0, ck1));"
         ),
     ]
     assert queries == expected_queries
 
 
-def test_schema_can_be_created_in_database():
+def test_can_create_table_with_one_pk():
+    config = GeminiConfiguration(
+        seed=1234,
+        min_columns=2,
+        max_columns=2,
+        max_clustering_keys=2,
+        min_partition_keys=1,
+        max_partition_keys=1,
+    )
+    keyspace = generate_schema(
+        config,
+        pk_types=[AsciiColumn, BigIntColumn],
+        ck_types=[AsciiColumn, BigIntColumn],
+        c_types=[AsciiColumn, BigIntColumn],
+    )
+    assert keyspace.name == "gemini"
+    assert keyspace.tables
+    queries = keyspace.as_queries(replication_strategy=SimpleReplicationStrategy(3))
+    expected_queries = [
+        CqlDto(
+            "CREATE KEYSPACE IF NOT EXISTS gemini with "
+            "replication = {'class': 'SimpleStrategy', 'replication_factor': 3};"
+        ),
+        CqlDto(
+            "CREATE TABLE IF NOT EXISTS gemini.table0"
+            " (pk0 ascii, ck0 ascii, ck1 ascii, col0 ascii, col1 bigint,"
+            " PRIMARY KEY (pk0, ck0, ck1));"
+        ),
+    ]
+    assert queries == expected_queries
+
+
+def test_schema_can_be_created_in_database(config):
     executor = RecordingExecutor()
-    keyspace = generate_schema(seed=1234)
+    keyspace = generate_schema(config)
     keyspace.create(executor, SimpleReplicationStrategy(3))
     assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(executor.executed_queries)
     for ks_cql, executed_cql in zip(

@@ -34,6 +34,13 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     token_range_slices: int = 10000
     concurrency: int = 4
     seed: int = 0
+    max_tables: int = 1
+    min_partition_keys: int = 2
+    max_partition_keys: int = 6
+    min_clustering_keys: int = 2
+    max_clustering_keys: int = 4
+    min_columns: int = 8
+    max_columns: int = 16
 
 
 # pylint: disable=unused-argument

@@ -121,10 +121,26 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
     help="Number of concurrent processes",
 )
 @click.option("--seed", "-s", type=int, default=0, help="PRNG seed value")
+@click.option("--max-tables", type=int, default=1, help="Maximum number of generated tables")
+@click.option(
+    "--min-clustering-keys", type=int, default=2, help="Minimum number of generated clustering keys"
+)
+@click.option("--min-columns", type=int, default=8, help="Minimum number of generated columns")
+@click.option(
+    "--min-partition-keys", type=int, default=2, help="Minimum number of generated partition keys"
+)
+@click.option(
+    "--max-partition-keys", type=int, default=6, help="Maximum number of generated partition keys"
+)
+@click.option(
+    "--max-clustering-keys", type=int, default=4, help="Maximum number of generated clustering keys"
+)
+@click.option("--max-columns", type=int, default=16, help="Maximum number of generated columns")
+@click.option("--min-columns", type=int, default=8, help="Minimum number of generated columns")
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
-    keyspace = generate_schema(seed=config.seed)
+    keyspace = generate_schema(config=config)
     sut_query_executor = QueryExecutorFactory.create_executor(config.test_cluster)
     oracle_query_executor = QueryExecutorFactory.create_executor(config.oracle_cluster)
     if config.drop_schema:

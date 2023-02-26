@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
-from typing import List
+import random
+from typing import List, Type
 
-from gemini_python.column_types import Column, AsciiColumn, BigIntColumn
+from gemini_python.column_types import Column, ALL_COLUMN_TYPES
 from gemini_python.executor import QueryExecutor
-from gemini_python import CqlDto
+from gemini_python import CqlDto, GeminiConfiguration
 from gemini_python.replication_strategy import ReplicationStrategy
 
 
@@ -22,15 +23,17 @@ class Table:
         return self.primary_keys + self.clustering_keys + self.columns
 
     def as_query(self) -> CqlDto:
-        primary_key = (
-            f"({','.join([column.name for column in self.primary_keys])})" + ")"
-            if not self.clustering_keys
-            else f", {','.join([column.name for column in self.clustering_keys])}"
+        partition_key = f"{', '.join([column.name for column in self.primary_keys])}"
+        partition_key = f"({partition_key})" if len(self.primary_keys) > 1 else partition_key
+        clustering_key = (
+            f", {', '.join([column.name for column in self.clustering_keys])}"
+            if self.clustering_keys
+            else ""
         )
         return CqlDto(
             f"CREATE TABLE IF NOT EXISTS {self.keyspace_name}.{self.name} "
             f"({', '.join([str(col) for col in self.all_columns])},"
-            f" PRIMARY KEY ({primary_key});"
+            f" PRIMARY KEY ({partition_key}{clustering_key}));"
         )
 
 
@@ -64,17 +67,53 @@ class Keyspace:
         query_executor.execute(CqlDto(f"drop keyspace if exists {self.name}"))
 
 
-def generate_schema(seed: int) -> Keyspace:
-    """Generates schema: Keyspace with tables."""
+def _generate_random_column(
+    rand: random.Random,
+    seed: int,
+    prefix: str,
+    index: int,
+    column_types: List[Type[Column]],
+    max_size: int | None = None,
+) -> Column:
+    params = {"name": f"{prefix}{index}", "seed": seed}
+    if max_size:
+        params["max_size"] = max_size
+    return rand.choice(column_types)(**params)  # type: ignore
+
+
+def generate_schema(  # pylint: disable=dangerous-default-value
+    config: GeminiConfiguration,
+    pk_types: List[Type[Column]] = ALL_COLUMN_TYPES,
+    ck_types: List[Type[Column]] = ALL_COLUMN_TYPES,
+    c_types: List[Type[Column]] = ALL_COLUMN_TYPES,
+) -> Keyspace:
+    """Generates schema: Keyspace with tables according to configuration."""
     ks_name = "gemini"
-    return Keyspace(
-        name=ks_name,
-        tables=[
+    rand = random.Random(config.seed)
+    tables = []
+    for idx in range(config.max_tables):
+        num_partition_keys = rand.randint(config.min_partition_keys, config.max_partition_keys)
+        num_clustering_keys = rand.randint(config.min_clustering_keys, config.max_clustering_keys)
+        num_columns = rand.randint(config.min_columns, config.max_columns)
+        primary_keys = [
+            _generate_random_column(rand, config.seed, "pk", idx, pk_types)
+            for idx in range(num_partition_keys)
+        ]
+        clustering_keys = [
+            _generate_random_column(rand, config.seed, "ck", idx, ck_types)
+            for idx in range(num_clustering_keys)
+        ]
+        columns = [
+            _generate_random_column(rand, config.seed, "col", idx, c_types)
+            for idx in range(num_columns)
+        ]
+        tables.append(
             Table(
-                name="table1",
+                name=f"table{idx}",
                 keyspace_name=ks_name,
-                primary_keys=[BigIntColumn(name="pk", seed=seed)],
-                columns=[AsciiColumn(name="col1", seed=seed)],
+                primary_keys=primary_keys,
+                clustering_keys=clustering_keys,
+                columns=columns,
             )
-        ],
-    )
+        )
+    return Keyspace(name=ks_name, tables=tables)

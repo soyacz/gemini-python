@@ -19,6 +19,7 @@ class Column:
     name: str
     cql_type: str
     seed: int = 0
+    size: int = 100
 
     def __post_init__(self) -> None:
         self.seed = (
@@ -44,10 +45,10 @@ class AsciiColumn(Column):
     name: str
     cql_type: str = field(default="ascii")
     seed: int = 0
-    length: int = 100
+    size: int = 100
 
     def generate_random_value(self) -> Any:
-        return "".join(self._random.choices(string.ascii_letters + string.digits, k=self.length))
+        return "".join(self._random.choices(string.ascii_letters + string.digits, k=self.size))
 
     def generate_sequence_value(self) -> Any:
         return self.generate_random_value()
@@ -60,10 +61,14 @@ class BigIntColumn(Column):
     cql_type: str = "bigint"
     _seq: int = 0
     seed = 0
+    size = sys.maxsize
 
     def generate_random_value(self) -> Any:
-        return self._random.randint(-sys.maxsize - 1, sys.maxsize)
+        return self._random.randint(-self.size - 1, self.size)
 
     def generate_sequence_value(self) -> int:
         self._seq += 1
         return self._seq
+
+
+ALL_COLUMN_TYPES = [AsciiColumn, BigIntColumn]
