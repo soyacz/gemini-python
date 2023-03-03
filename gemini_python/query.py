@@ -65,3 +65,22 @@ class SelectQueryGenerator(QueryGenerator):
             self._stmt,
             next(self._partitions),
         )
+
+
+class MixedQueryGenerator(QueryGenerator):
+    """Query generator for mixed mode - cycles through provided generators."""
+
+    def __init__(self, table: Table, partitions: list[tuple]) -> None:
+        super().__init__(table)
+        self._generators = cycle(
+            [
+                InsertQueryGenerator(table, partitions),
+                SelectQueryGenerator(table, partitions),
+            ]
+        )
+
+    def __iter__(self) -> "QueryGenerator":
+        return self
+
+    def __next__(self) -> CqlDto:
+        return next(next(self._generators))

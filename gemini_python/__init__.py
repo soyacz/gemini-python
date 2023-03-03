@@ -20,6 +20,7 @@ class QueryMode(Enum):
 
     WRITE = "write"
     READ = "read"
+    MIXED = "mixed"
 
 
 @dataclass
