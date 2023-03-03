@@ -75,3 +75,24 @@ def test_can_generate_mixed_queries(simple_schema_config, only_big_int_column_ty
     assert cql_dto.statement.lower() == "select pk0, ck0, col0 from gemini.table0 where pk0=?"
     assert isinstance(cql_dto.values, tuple)
     assert cql_dto.values == (1,)
+
+
+def test_can_generate_queries_for_multiple_tables(simple_schema_config):
+    simple_schema_config.max_tables = 2
+    schema = generate_schema(simple_schema_config)
+
+    assert len(schema.tables) == 2
+
+    generator = LoadGenerator(
+        schema=schema, mode=QueryMode.READ, partitions=[[(1,), (2,)], [(1,), (2,)]]
+    )
+    cql_dto = generator.get_query()
+    assert cql_dto.statement.lower() == "select pk0, ck0, col0 from gemini.table0 where pk0=?"
+    assert isinstance(cql_dto.values, tuple)
+    assert cql_dto.values == (1,)
+
+    # verify next query is "select"
+    cql_dto = generator.get_query()
+    assert cql_dto.statement.lower() == "select pk0, ck0, col0 from gemini.table1 where pk0=?"
+    assert isinstance(cql_dto.values, tuple)
+    assert cql_dto.values == (1,)

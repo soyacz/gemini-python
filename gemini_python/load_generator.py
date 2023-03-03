@@ -1,8 +1,9 @@
+from itertools import cycle
+
 from gemini_python import CqlDto, QueryMode
 from gemini_python.query import (
     InsertQueryGenerator,
     SelectQueryGenerator,
-    MixedQueryGenerator,
     QueryGenerator,
 )
 from gemini_python.schema import Keyspace
@@ -14,22 +15,22 @@ class LoadGenerator:
     def __init__(
         self, schema: Keyspace, partitions: list[list[tuple]], mode: QueryMode = QueryMode.WRITE
     ):
-        self._query_generator: QueryGenerator
-        match mode:
-            case QueryMode.WRITE:
-                self._query_generator = InsertQueryGenerator(
-                    table=schema.tables[0], partitions=partitions[0]
-                )
-            case QueryMode.READ:
-                self._query_generator = SelectQueryGenerator(
-                    table=schema.tables[0], partitions=partitions[0]
-                )
-            case QueryMode.MIXED:
-                self._query_generator = MixedQueryGenerator(
-                    table=schema.tables[0], partitions=partitions[0]
-                )
-            case _:
-                raise ValueError(f"Unsupported query mode: {mode}")
+        generators: list[QueryGenerator] = []
+        assert len(schema.tables) == len(
+            partitions
+        ), "partitions were not generated for all tables. Should not happen."
+        for table, partition_list in zip(schema.tables, partitions):
+            match mode:
+                case QueryMode.WRITE:
+                    generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
+                case QueryMode.READ:
+                    generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+                case QueryMode.MIXED:
+                    generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
+                    generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+                case _:
+                    raise ValueError(f"Unsupported query mode: {mode}")
+        self._query_generator = cycle(generators)
 
     def get_query(self) -> CqlDto:
-        return next(self._query_generator)
+        return next(next(self._query_generator))

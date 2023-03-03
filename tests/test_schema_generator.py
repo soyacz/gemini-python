@@ -77,3 +77,16 @@ def test_schema_can_be_created_in_database(config):
         keyspace.as_queries(SimpleReplicationStrategy(3)), executor.executed_queries
     ):
         assert ks_cql == executed_cql
+
+
+def test_can_create_multiple_tables(config):
+    executor = RecordingExecutor()
+    config.max_tables = 2
+    keyspace = generate_schema(config)
+    assert len(keyspace.tables) == 2
+    keyspace.create(executor, SimpleReplicationStrategy(3))
+    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(executor.executed_queries)
+    for ks_cql, executed_cql in zip(
+        keyspace.as_queries(SimpleReplicationStrategy(3)), executor.executed_queries
+    ):
+        assert ks_cql == executed_cql

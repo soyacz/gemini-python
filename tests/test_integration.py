@@ -14,7 +14,7 @@ def test_can_run_gemini():
 
 
 def test_can_run_gemini_process(config):
-    config.mode = QueryMode.READ
+    config.mode = QueryMode.MIXED
     config.duration = 1
     keyspace = generate_schema(config)
     GeminiProcess(config=config, schema=keyspace).run()
