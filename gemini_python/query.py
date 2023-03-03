@@ -54,7 +54,7 @@ class SelectQueryGenerator(QueryGenerator):
         self._stmt = (
             f"select {', '.join(col.name for col in self._table.all_columns)}"
             f" from {table.keyspace_name}.{table.name} "
-            f"where {' AND '.join([col.name + '=?' for col in self._table.primary_keys])}"
+            f"where {' AND '.join([col.name + '=?' for col in self._table.partition_keys])}"
         )
 
     def __iter__(self) -> "QueryGenerator":

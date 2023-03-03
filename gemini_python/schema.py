@@ -14,17 +14,17 @@ class Table:
 
     name: str
     keyspace_name: str
-    primary_keys: List[Column]
+    partition_keys: List[Column]
     clustering_keys: List[Column] = field(default_factory=list)
     columns: List[Column] = field(default_factory=list)
 
     @property
     def all_columns(self) -> List[Column]:
-        return self.primary_keys + self.clustering_keys + self.columns
+        return self.partition_keys + self.clustering_keys + self.columns
 
     def as_query(self) -> CqlDto:
-        partition_key = f"{', '.join([column.name for column in self.primary_keys])}"
-        partition_key = f"({partition_key})" if len(self.primary_keys) > 1 else partition_key
+        partition_key = f"{', '.join([column.name for column in self.partition_keys])}"
+        partition_key = f"({partition_key})" if len(self.partition_keys) > 1 else partition_key
         clustering_key = (
             f", {', '.join([column.name for column in self.clustering_keys])}"
             if self.clustering_keys
@@ -95,7 +95,7 @@ def generate_schema(  # pylint: disable=dangerous-default-value
         num_partition_keys = rand.randint(config.min_partition_keys, config.max_partition_keys)
         num_clustering_keys = rand.randint(config.min_clustering_keys, config.max_clustering_keys)
         num_columns = rand.randint(config.min_columns, config.max_columns)
-        primary_keys = [
+        partition_keys = [
             _generate_random_column(rand, config.seed, "pk", idx, pk_types)
             for idx in range(num_partition_keys)
         ]
@@ -111,7 +111,7 @@ def generate_schema(  # pylint: disable=dangerous-default-value
             Table(
                 name=f"table{idx}",
                 keyspace_name=ks_name,
-                primary_keys=primary_keys,
+                partition_keys=partition_keys,
                 clustering_keys=clustering_keys,
                 columns=columns,
             )

@@ -40,7 +40,7 @@ class GeminiProcess(Process):
         for table in self._schema.tables:
             tables_partitions.append(
                 [
-                    tuple(column.generate_random_value() for column in table.primary_keys)
+                    tuple(column.generate_random_value() for column in table.partition_keys)
                     for _ in range(self._config.token_range_slices // self._config.concurrency)
                 ]
             )
