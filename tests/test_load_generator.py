@@ -3,24 +3,61 @@ from gemini_python.load_generator import LoadGenerator
 from gemini_python.schema import generate_schema
 
 
-def test_load_generator_can_generate_insert_queries(simple_schema_config):
-    schema = generate_schema(simple_schema_config)
+def test_can_generate_insert_queries(simple_schema_config, only_big_int_column_types):
+    schema = generate_schema(simple_schema_config, **only_big_int_column_types)
     generator = LoadGenerator(schema=schema, mode=QueryMode.WRITE, partitions=[[(1,), (2,)]])
     cql_dto = generator.get_query()
-    assert cql_dto.statement.lower().startswith("insert")
+    assert cql_dto.statement.lower() == "insert into gemini.table0 (pk0, ck0, col0) values (?,?,?)"
     assert isinstance(cql_dto.values, tuple)
     # verify seed is working
-    assert cql_dto.values == (
-        1,
-        "9gYBr0jzBVRnepzTZUcVaRzlvpUSlNN9s2T9QJtXWXWWgC7eXXg6c2E1XCwmLdH1mpWU1yMcMTc2zfqbn8o3oIvpuWPAKrPUeN1N",
-        "Otb9ahtJtTV8ryJD3jfZKOmqxLQbxGRoV2zl7eMizwYazhQKwTtDkacRuKWjmp5wP1vZHpWjLP1Jh6zFKjQhRxzs81cX0kXt9CC1",
-    )
+    assert cql_dto.values == (1, 97, 67)
+    # verify we don't generate the same partitions
+    cql_dto_2 = generator.get_query()
+    assert cql_dto.values != cql_dto_2.values
 
 
-def test_load_generator_can_generate_select_queries(config):
-    schema = generate_schema(config)
+def test_can_generate_select_queries(simple_schema_config):
+    schema = generate_schema(simple_schema_config)
     generator = LoadGenerator(schema=schema, mode=QueryMode.READ, partitions=[[(1,), (2,)]])
     cql_dto = generator.get_query()
-    assert cql_dto.statement.lower().startswith("select")
+    assert cql_dto.statement.lower() == "select pk0, ck0, col0 from gemini.table0 where pk0=?"
     assert isinstance(cql_dto.values, tuple)
     assert cql_dto.values == (1,)
+    # verify we don't generate the same partitions
+    cql_dto_2 = generator.get_query()
+    assert cql_dto.values != cql_dto_2.values
+
+
+def test_can_generate_insert_queries_multi_partition(
+    simple_schema_config, only_big_int_column_types
+):
+    simple_schema_config.min_partition_keys = 2
+    simple_schema_config.max_partition_keys = 2
+    schema = generate_schema(simple_schema_config, **only_big_int_column_types)
+    generator = LoadGenerator(
+        schema=schema, mode=QueryMode.WRITE, partitions=[[(1, 2), (3, 4), (5, 6), (7, 8)]]
+    )
+    cql_dto = generator.get_query()
+    assert (
+        cql_dto.statement.lower()
+        == "insert into gemini.table0 (pk0, pk1, ck0, col0) values (?,?,?,?)"
+    )
+    assert isinstance(cql_dto.values, tuple)
+    # verify seed is working
+    assert cql_dto.values == (1, 2, 97, 67)
+
+
+def test_can_generate_select_queries_multi_pk(simple_schema_config):
+    simple_schema_config.min_partition_keys = 2
+    simple_schema_config.max_partition_keys = 2
+    schema = generate_schema(simple_schema_config)
+    generator = LoadGenerator(
+        schema=schema, mode=QueryMode.READ, partitions=[[(1, 2), (3, 4), (5, 6), (7, 8)]]
+    )
+    cql_dto = generator.get_query()
+    assert (
+        cql_dto.statement.lower()
+        == "select pk0, pk1, ck0, col0 from gemini.table0 where pk0=? and pk1=?"
+    )
+    assert isinstance(cql_dto.values, tuple)
+    assert cql_dto.values == (1, 2)

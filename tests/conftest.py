@@ -1,6 +1,7 @@
 import pytest
 
 from gemini_python import GeminiConfiguration
+from gemini_python.column_types import BigIntColumn
 
 
 @pytest.fixture
@@ -21,3 +22,8 @@ def simple_schema_config():
         min_partition_keys=1,
         max_partition_keys=1,
     )
+
+
+@pytest.fixture
+def only_big_int_column_types():
+    return {"pk_types": [BigIntColumn], "ck_types": [BigIntColumn], "c_types": [BigIntColumn]}
