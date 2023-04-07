@@ -6,7 +6,7 @@ from typing import Iterable, List
 
 from cassandra.cluster import Cluster  # type: ignore
 from cassandra.policies import RoundRobinPolicy  # type: ignore
-from cassandra.query import PreparedStatement  # type: ignore
+from cassandra.query import PreparedStatement, dict_factory  # type: ignore
 from cassandra.io.libevreactor import LibevConnection  # type: ignore
 
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
@@ -45,6 +45,7 @@ class CqlQueryExecutor(QueryExecutor):
             hosts, port=port, load_balancing_policy=RoundRobinPolicy(), protocol_version=4, **kwargs
         )
         self.session = self.cluster.connect()
+        self.session.row_factory = dict_factory
 
     def prepare(self, statement: str) -> None:
         self._prepare_statement(statement)

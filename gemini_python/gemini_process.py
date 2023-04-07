@@ -30,7 +30,7 @@ class GeminiProcess(Process):
 
     def __init__(self, config: GeminiConfiguration, schema: Keyspace):
         super().__init__()
-        self._config = config
+        self._gemini_config = config
         self._schema = schema
         self._partitions = self._generate_partitions()
         assert config.duration > 0, "duration should be greater than 0 seconds"
@@ -41,7 +41,9 @@ class GeminiProcess(Process):
             tables_partitions.append(
                 [
                     tuple(column.generate_random_value() for column in table.partition_keys)
-                    for _ in range(self._config.token_range_slices // self._config.concurrency)
+                    for _ in range(
+                        self._gemini_config.token_range_slices // self._gemini_config.concurrency
+                    )
                 ]
             )
         return tables_partitions
@@ -49,14 +51,15 @@ class GeminiProcess(Process):
     def run(self) -> None:
         start_time = time.time()
         # executors must be created in run() method and not in __init__, otherwise cassandra driver hangs
-        sut_query_executor = QueryExecutorFactory.create_executor(self._config.test_cluster)
+        sut_query_executor = QueryExecutorFactory.create_executor(self._gemini_config.test_cluster)
         generator = LoadGenerator(
-            schema=self._schema, mode=self._config.mode, partitions=self._partitions
+            schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
         )
         middlewares = init_middlewares(
-            self._config, [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware, Validator]
+            self._gemini_config,
+            [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware, Validator],
         )
-        while time.time() - start_time < self._config.duration:
+        while time.time() - start_time < self._gemini_config.duration:
             cql_dto = generator.get_query()
             on_success_callbacks, on_error_callbacks = run_middlewares(cql_dto, middlewares)
             sut_query_executor.execute_async(

@@ -1,12 +1,12 @@
 import logging
 from functools import partial
 from itertools import zip_longest
-from time import sleep
 from typing import Iterable, Callable, Tuple
 
 from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, log_error
-from gemini_python.executor import QueryExecutorFactory, NoOpQueryExecutor, QueryExecutor
+from gemini_python.executor import NoOpQueryExecutor, QueryExecutor
 from gemini_python.middleware import Middleware
+from gemini_python.subprocess_executor import SubprocessQueryExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +37,11 @@ class GeminiValidator:
         if isinstance(self._oracle, NoOpQueryExecutor):
             # don't validate when oracle is not configured
             return lambda *args, **kwargs: None
-        self._oracle.prepare(cql_dto.statement)
         return partial(self.validate, cql_dto)
 
     def validate(self, cql_dto: CqlDto, expected_result: Iterable | None) -> None:
-        validate_fun = partial(self._validate_fun, expected_result)
-        self._oracle.execute_async(
-            cql_dto,
-            on_success=[validate_fun],
-            on_error=[logger.exception],
-        )
+        result = self._oracle.execute(cql_dto)
+        self._validate_fun(expected_result, result)
 
     def teardown(self) -> None:
         self._oracle.teardown()
@@ -57,16 +52,10 @@ class Validator(Middleware):
 
     def __init__(self, config: GeminiConfiguration) -> None:
         super().__init__(config)
-        self._gemini_validator = GeminiValidator(
-            QueryExecutorFactory.create_executor(self._config.oracle_cluster)
-        )
+        self._gemini_validator = GeminiValidator(SubprocessQueryExecutor(config.oracle_cluster))
 
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
         return self._gemini_validator.prepare_validation_method(cql_dto), log_error
 
     def teardown(self) -> None:
-        # after gemini process ends, still there are pending queries in oracle.
-        # todo: replace sleep with more reliable solution that waits for all the queries complete
-        if self._config.oracle_cluster:
-            sleep(3)
         self._gemini_validator.teardown()

@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Iterable
 
 from gemini_python.executor import QueryExecutor
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
@@ -24,3 +24,9 @@ class MemoryExecutor(QueryExecutor):
             result = self._data
         for callback in on_success:
             callback(result)
+
+    def execute(self, cql_dto: CqlDto) -> Iterable | None:
+        if cql_dto.statement == "insert":
+            self._data.append(cql_dto.values)
+            return None
+        return self._data

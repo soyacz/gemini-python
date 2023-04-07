@@ -8,7 +8,7 @@ class Middleware(ABC):
     """Abstract class for actions that occur before and after in callback after async request to SUT."""
 
     def __init__(self, config: GeminiConfiguration):
-        self._config = config
+        self._gemini_config = config
 
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
         """CAUTION: own middleware state modification callbacks must be thread safe."""
