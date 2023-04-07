@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class QueryExecutor(ABC):
+class QueryDriver(ABC):
     """Responsible for communication with DB and running queries."""
 
     def execute_async(
@@ -33,10 +33,10 @@ class QueryExecutor(ABC):
         """Preparation before running statement."""
 
     def teardown(self) -> None:
-        """Proper query executor shutdown, closing all connections, feeing resources."""
+        """Proper query driver shutdown, closing all connections, freeing resources."""
 
 
-class CqlQueryExecutor(QueryExecutor):
+class PythonQueryDriver(QueryDriver):
     """Communicates with and queries Scylla/Cassandra databases."""
 
     def __init__(self, hosts: List[str], port: int = 9042) -> None:
@@ -82,7 +82,7 @@ class CqlQueryExecutor(QueryExecutor):
         self.teardown()
 
 
-class NoOpQueryExecutor(QueryExecutor):
+class NoOpQueryDriver(QueryDriver):
     """Does nothing. Used when no oracle is configured."""
 
     def execute_async(
@@ -95,11 +95,11 @@ class NoOpQueryExecutor(QueryExecutor):
             callback(None)
 
 
-class QueryExecutorFactory:
-    """Creates QueryExecutor objects according to cluster parameters."""
+class QueryDriverFactory:
+    """Creates QueryDriver objects according to cluster parameters."""
 
     @classmethod
-    def create_executor(cls, cluster_ips: List[str] | None = None) -> QueryExecutor:
+    def create_query_driver(cls, cluster_ips: List[str] | None = None) -> QueryDriver:
         if cluster_ips:
-            return CqlQueryExecutor(cluster_ips)
-        return NoOpQueryExecutor()
+            return PythonQueryDriver(cluster_ips)
+        return NoOpQueryDriver()

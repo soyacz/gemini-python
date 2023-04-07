@@ -1,18 +1,18 @@
 from gemini_python import CqlDto
-from gemini_python.executor import NoOpQueryExecutor
+from gemini_python.query_driver import NoOpQueryDriver
 from gemini_python.middleware.validator import GeminiValidator
-from tests.utils.memory_executor import MemoryExecutor
+from tests.utils.memory_query_driver import MemoryQueryDriver
 
 
 def test_validator_passes_when_queried_rows_match(caplog):
-    oracle_executor = MemoryExecutor()
-    oracle_executor.execute_async(
+    oracle_query_driver = MemoryQueryDriver()
+    oracle_query_driver.execute_async(
         CqlDto(statement="insert", values=("test", "value")), on_success=[], on_error=[]
     )
-    oracle_executor.execute_async(
+    oracle_query_driver.execute_async(
         CqlDto(statement="insert", values=("row", "two")), on_success=[], on_error=[]
     )
-    validator = GeminiValidator(oracle=oracle_executor)
+    validator = GeminiValidator(oracle=oracle_query_driver)
 
     validator.validate(
         CqlDto(statement="select", values=()), expected_result=[("test", "value"), ("row", "two")]
@@ -21,28 +21,28 @@ def test_validator_passes_when_queried_rows_match(caplog):
 
 
 def test_validator_fails_when_oracle_returns_value_and_is_expected_empty_list(caplog):
-    oracle_executor = MemoryExecutor()
-    validator = GeminiValidator(oracle=oracle_executor)
+    oracle_query_driver = MemoryQueryDriver()
+    validator = GeminiValidator(oracle=oracle_query_driver)
 
     validator.validate(CqlDto(statement="select", values=()), expected_result=[("test",)])
     assert "validation error" in caplog.text
 
 
 def test_validator_fails_when_queried_rows_mismatch(caplog):
-    oracle_executor = MemoryExecutor()
-    oracle_executor.execute_async(
+    oracle_query_driver = MemoryQueryDriver()
+    oracle_query_driver.execute_async(
         CqlDto(statement="insert", values=("value",)), on_success=[], on_error=[]
     )
-    validator = GeminiValidator(oracle=oracle_executor)
+    validator = GeminiValidator(oracle=oracle_query_driver)
 
     validator.validate(CqlDto(statement="select", values=()), expected_result=[("not value",)])
     assert "validation error" in caplog.text
 
 
 def test_validator_fails_when_queried_rows_number_mismatch(caplog):
-    oracle_executor = MemoryExecutor()
-    validator = GeminiValidator(oracle=oracle_executor)
-    oracle_executor.execute_async(
+    oracle_query_driver = MemoryQueryDriver()
+    validator = GeminiValidator(oracle=oracle_query_driver)
+    oracle_query_driver.execute_async(
         CqlDto(statement="insert", values=("test",)), on_success=[], on_error=[]
     )
 
@@ -51,24 +51,24 @@ def test_validator_fails_when_queried_rows_number_mismatch(caplog):
 
 
 def test_validator_passes_when_oracle_returns_empty_list_and_is_expected_empty_list(caplog):
-    oracle_executor = MemoryExecutor()
-    validator = GeminiValidator(oracle=oracle_executor)
+    oracle_query_driver = MemoryQueryDriver()
+    validator = GeminiValidator(oracle=oracle_query_driver)
 
     validator.validate(CqlDto(statement="select", values=()), expected_result=[])
     assert "validation error" not in caplog.text
 
 
 def test_validator_fails_when_oracle_returns_empty_list_and_is_expected_value(caplog):
-    oracle_executor = MemoryExecutor()
-    validator = GeminiValidator(oracle=oracle_executor)
+    oracle_query_driver = MemoryQueryDriver()
+    validator = GeminiValidator(oracle=oracle_query_driver)
 
     validator.validate(CqlDto(statement="select", values=()), expected_result=["test"])
     assert "validation error" in caplog.text
 
 
 def test_validator_does_nothing_when_oracle_is_not_configured(caplog):
-    oracle_executor = NoOpQueryExecutor()
-    validator = GeminiValidator(oracle=oracle_executor)
+    oracle_query_driver = NoOpQueryDriver()
+    validator = GeminiValidator(oracle=oracle_query_driver)
     validate = validator.prepare_validation_method(CqlDto(statement="insert", values=("", "value")))
     validate(expected_result="I would fail if oracle was configured")
     assert "validation error" not in caplog.text

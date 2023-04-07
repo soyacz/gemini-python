@@ -1,10 +1,10 @@
 from typing import Any, List, Iterable
 
-from gemini_python.executor import QueryExecutor
+from gemini_python.query_driver import QueryDriver
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 
-class MemoryExecutor(QueryExecutor):
+class MemoryQueryDriver(QueryDriver):
     """In memory database for unit tests purposes"""
 
     def __init__(self) -> None:

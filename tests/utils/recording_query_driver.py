@@ -1,10 +1,10 @@
 from typing import List
 
-from gemini_python.executor import QueryExecutor
+from gemini_python.query_driver import QueryDriver
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 
-class RecordingExecutor(QueryExecutor):
+class RecordingQueryDriver(QueryDriver):
     """Records all CQL's executed for unit tests purposes.
 
     All queries return None."""

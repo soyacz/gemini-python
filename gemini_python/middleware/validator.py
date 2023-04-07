@@ -4,9 +4,9 @@ from itertools import zip_longest
 from typing import Iterable, Callable, Tuple
 
 from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, log_error
-from gemini_python.executor import NoOpQueryExecutor, QueryExecutor
+from gemini_python.query_driver import NoOpQueryDriver, QueryDriver
 from gemini_python.middleware import Middleware
-from gemini_python.subprocess_executor import SubprocessQueryExecutor
+from gemini_python.subprocess_query_driver import SubprocessQueryDriver
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class GeminiValidator:
     """Class responsible for querying oracle and verifying returned results."""
 
-    def __init__(self, oracle: QueryExecutor):
+    def __init__(self, oracle: QueryDriver):
         self._oracle = oracle
 
     @staticmethod
@@ -33,8 +33,8 @@ class GeminiValidator:
                 logger.error(error_msg, actual, expected)
 
     def prepare_validation_method(self, cql_dto: CqlDto) -> Callable:
-        # prepare statement upfront, otherwise it hangs when running inside sut executor callback
-        if isinstance(self._oracle, NoOpQueryExecutor):
+        # prepare statement upfront, otherwise it hangs when running inside sut query driver callback
+        if isinstance(self._oracle, NoOpQueryDriver):
             # don't validate when oracle is not configured
             return lambda *args, **kwargs: None
         return partial(self.validate, cql_dto)
@@ -52,7 +52,7 @@ class Validator(Middleware):
 
     def __init__(self, config: GeminiConfiguration) -> None:
         super().__init__(config)
-        self._gemini_validator = GeminiValidator(SubprocessQueryExecutor(config.oracle_cluster))
+        self._gemini_validator = GeminiValidator(SubprocessQueryDriver(config.oracle_cluster))
 
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
         return self._gemini_validator.prepare_validation_method(cql_dto), log_error

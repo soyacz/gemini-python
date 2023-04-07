@@ -2,7 +2,7 @@ from gemini_python import CqlDto, GeminiConfiguration
 from gemini_python.column_types import BigIntColumn, AsciiColumn
 from gemini_python.replication_strategy import SimpleReplicationStrategy
 from gemini_python.schema import generate_schema
-from tests.utils.recording_executor import RecordingExecutor
+from tests.utils.recording_query_driver import RecordingQueryDriver
 
 
 def test_schema_can_generate_keyspace_and_tables_ddl_queries():
@@ -69,24 +69,28 @@ def test_can_create_table_with_one_pk():
 
 
 def test_schema_can_be_created_in_database(config):
-    executor = RecordingExecutor()
+    query_driver = RecordingQueryDriver()
     keyspace = generate_schema(config)
-    keyspace.create(executor, SimpleReplicationStrategy(3))
-    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(executor.executed_queries)
+    keyspace.create(query_driver, SimpleReplicationStrategy(3))
+    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(
+        query_driver.executed_queries
+    )
     for ks_cql, executed_cql in zip(
-        keyspace.as_queries(SimpleReplicationStrategy(3)), executor.executed_queries
+        keyspace.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
     ):
         assert ks_cql == executed_cql
 
 
 def test_can_create_multiple_tables(config):
-    executor = RecordingExecutor()
+    query_driver = RecordingQueryDriver()
     config.max_tables = 2
     keyspace = generate_schema(config)
     assert len(keyspace.tables) == 2
-    keyspace.create(executor, SimpleReplicationStrategy(3))
-    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(executor.executed_queries)
+    keyspace.create(query_driver, SimpleReplicationStrategy(3))
+    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(
+        query_driver.executed_queries
+    )
     for ks_cql, executed_cql in zip(
-        keyspace.as_queries(SimpleReplicationStrategy(3)), executor.executed_queries
+        keyspace.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
     ):
         assert ks_cql == executed_cql

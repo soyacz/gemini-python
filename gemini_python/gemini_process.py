@@ -3,8 +3,8 @@ import time
 from multiprocessing import Process
 
 from gemini_python import GeminiConfiguration
-from gemini_python.executor import (
-    QueryExecutorFactory,
+from gemini_python.query_driver import (
+    QueryDriverFactory,
 )
 from gemini_python.load_generator import LoadGenerator
 from gemini_python.middleware import init_middlewares, run_middlewares
@@ -50,8 +50,8 @@ class GeminiProcess(Process):
 
     def run(self) -> None:
         start_time = time.time()
-        # executors must be created in run() method and not in __init__, otherwise cassandra driver hangs
-        sut_query_executor = QueryExecutorFactory.create_executor(self._gemini_config.test_cluster)
+        # query drivers must be created in run() method and not in __init__, otherwise cassandra driver hangs
+        sut_query_driver = QueryDriverFactory.create_query_driver(self._gemini_config.test_cluster)
         generator = LoadGenerator(
             schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
         )
@@ -62,11 +62,11 @@ class GeminiProcess(Process):
         while time.time() - start_time < self._gemini_config.duration:
             cql_dto = generator.get_query()
             on_success_callbacks, on_error_callbacks = run_middlewares(cql_dto, middlewares)
-            sut_query_executor.execute_async(
+            sut_query_driver.execute_async(
                 cql_dto,
                 on_success=on_success_callbacks,
                 on_error=on_error_callbacks + [handle_exception],
             )
         for middleware in middlewares:
             middleware.teardown()
-        sut_query_executor.teardown()
+        sut_query_driver.teardown()

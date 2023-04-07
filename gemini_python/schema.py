@@ -3,7 +3,7 @@ import random
 from typing import List, Type
 
 from gemini_python.column_types import Column, ALL_COLUMN_TYPES
-from gemini_python.executor import QueryExecutor
+from gemini_python.query_driver import QueryDriver
 from gemini_python import CqlDto, GeminiConfiguration
 from gemini_python.replication_strategy import ReplicationStrategy
 
@@ -55,16 +55,14 @@ class Keyspace:
             queries.append(table.as_query())
         return queries
 
-    def create(
-        self, query_executor: QueryExecutor, replication_strategy: ReplicationStrategy
-    ) -> None:
+    def create(self, query_driver: QueryDriver, replication_strategy: ReplicationStrategy) -> None:
         """Creates keyspace with tables in database."""
         for statement in self.as_queries(replication_strategy):
-            query_executor.execute(statement)
+            query_driver.execute(statement)
 
-    def drop(self, query_executor: QueryExecutor) -> None:
+    def drop(self, query_driver: QueryDriver) -> None:
         """Drops whole keyspace"""
-        query_executor.execute(CqlDto(f"drop keyspace if exists {self.name}"))
+        query_driver.execute(CqlDto(f"drop keyspace if exists {self.name}"))
 
 
 def _generate_random_column(

@@ -20,7 +20,7 @@ class ConcurrencyLimiter:
         # pylint: disable=consider-using-with
         not_blocked = self._semaphore.acquire(blocking=True, timeout=timeout)
         if not not_blocked:
-            raise TimeoutError("Timeout during waiting for async executor.")
+            raise TimeoutError("Timeout during waiting for async query driver.")
 
     def release(self, _: Iterable | Exception | None = None) -> None:
         """Releases semaphore for further acquisition."""
