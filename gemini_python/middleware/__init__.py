@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Callable
 
 from gemini_python import OnSuccessClb, OnErrorClb, CqlDto, GeminiConfiguration
 
@@ -25,7 +25,7 @@ def init_middlewares(
 
 
 def run_middlewares(
-    cql_dto: CqlDto, middlewares: List[Middleware]
+    cql_dto: CqlDto, middlewares: List[Middleware], error_handler: Callable
 ) -> Tuple[List[OnSuccessClb], List[OnErrorClb]]:
     """Executes middleware object's 'run' methods which return success and error callbacks for SUT async request.
 
@@ -35,6 +35,6 @@ def run_middlewares(
     error_callbacks = []
     for middleware in middlewares:
         on_success, on_error = middleware.run(cql_dto)
-        success_callbacks.append(on_success)
-        error_callbacks.append(on_error)
+        success_callbacks.append(error_handler(on_success))
+        error_callbacks.append(error_handler(on_error))
     return success_callbacks[::-1], error_callbacks[::-1]

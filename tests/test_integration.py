@@ -1,3 +1,5 @@
+from multiprocessing import Event
+
 from click.testing import CliRunner
 
 from gemini_python import QueryMode
@@ -17,4 +19,5 @@ def test_can_run_gemini_process(config):
     config.mode = QueryMode.MIXED
     config.duration = 1
     keyspace = generate_schema(config)
-    GeminiProcess(config=config, schema=keyspace).run()
+    termination_event = Event()
+    GeminiProcess(config=config, schema=keyspace, termination_event=termination_event).run()

@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from enum import unique, Enum
-from typing import List, Callable, Iterable, Any
+from typing import List, Callable, Iterable, Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     max_clustering_keys: int = 4
     min_columns: int = 8
     max_columns: int = 16
+    fail_fast: bool = False
 
 
 # pylint: disable=unused-argument
@@ -56,3 +57,10 @@ def log_error(*args: Any, **kwargs: Any) -> None:
 
 OnSuccessClb = Callable[[Iterable | None], None]
 OnErrorClb = Callable[[Exception], None]
+
+
+class ValidationError(Exception):
+    """Exception raised when validation fails"""
+
+    def __init__(self, expected: Dict | Iterable | None, actual: Dict | Iterable | None):
+        super().__init__(f"Expected: {expected}, actual: {actual}")

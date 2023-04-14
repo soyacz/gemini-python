@@ -1,8 +1,10 @@
 import logging
 import time
 from multiprocessing import Process
+from multiprocessing.synchronize import Event as EventClass
 
 from gemini_python import GeminiConfiguration
+from gemini_python.error_handlers import base_error_handler
 from gemini_python.query_driver import (
     QueryDriverFactory,
 )
@@ -12,6 +14,7 @@ from gemini_python.middleware.concurrency_limiter import ConcurrencyLimiterMiddl
 from gemini_python.middleware.performance_counter import PerformanceCounterMiddleware
 from gemini_python.middleware.validator import Validator
 from gemini_python.schema import Keyspace
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,11 +31,14 @@ class GeminiProcess(Process):
     queries_count param is temporary for limiting time gemini is executed.
     """
 
-    def __init__(self, config: GeminiConfiguration, schema: Keyspace):
+    def __init__(
+        self, config: GeminiConfiguration, schema: Keyspace, termination_event: EventClass
+    ):
         super().__init__()
         self._gemini_config = config
         self._schema = schema
         self._partitions = self._generate_partitions()
+        self._termination_event: EventClass = termination_event
         assert config.duration > 0, "duration should be greater than 0 seconds"
 
     def _generate_partitions(self) -> list[list[tuple]]:
@@ -59,9 +65,17 @@ class GeminiProcess(Process):
             self._gemini_config,
             [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware, Validator],
         )
-        while time.time() - start_time < self._gemini_config.duration:
+        error_handler = base_error_handler(
+            config=self._gemini_config, termination_event=self._termination_event
+        )
+        while (
+            not self._termination_event.is_set()
+            and time.time() - start_time < self._gemini_config.duration
+        ):
             cql_dto = generator.get_query()
-            on_success_callbacks, on_error_callbacks = run_middlewares(cql_dto, middlewares)
+            on_success_callbacks, on_error_callbacks = run_middlewares(
+                cql_dto, middlewares, error_handler
+            )
             sut_query_driver.execute_async(
                 cql_dto,
                 on_success=on_success_callbacks,

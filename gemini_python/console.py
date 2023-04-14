@@ -2,6 +2,7 @@
 import ipaddress
 import logging
 import re
+from multiprocessing import Event
 from typing import List, Any
 
 import click
@@ -137,6 +138,7 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
 )
 @click.option("--max-columns", type=int, default=16, help="Maximum number of generated columns")
 @click.option("--min-columns", type=int, default=8, help="Minimum number of generated columns")
+@click.option("--fail-fast", "-f", is_flag=True, help="Stop on first error")
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
@@ -150,8 +152,9 @@ def run(*args: Any, **kwargs: Any) -> None:
     keyspace.create(sut_query_driver, replication_strategy=SimpleReplicationStrategy(3))
     keyspace.create(oracle_query_driver, replication_strategy=SimpleReplicationStrategy(1))
     processes = []
+    termination_event = Event()
     for _ in range(config.concurrency):
-        gemini_process = GeminiProcess(config, keyspace)
+        gemini_process = GeminiProcess(config, keyspace, termination_event)
         processes.append(gemini_process)
     for gemini_process in processes:
         gemini_process.start()

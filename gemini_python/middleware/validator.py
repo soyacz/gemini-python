@@ -3,7 +3,14 @@ from functools import partial
 from itertools import zip_longest
 from typing import Iterable, Callable, Tuple
 
-from gemini_python import GeminiConfiguration, CqlDto, OnSuccessClb, OnErrorClb, log_error
+from gemini_python import (
+    GeminiConfiguration,
+    CqlDto,
+    OnSuccessClb,
+    OnErrorClb,
+    log_error,
+    ValidationError,
+)
 from gemini_python.query_driver import NoOpQueryDriver, QueryDriver
 from gemini_python.middleware import Middleware
 from gemini_python.subprocess_query_driver import SubprocessQueryDriver
@@ -19,18 +26,16 @@ class GeminiValidator:
 
     @staticmethod
     def _validate_fun(expected_it: Iterable | None, actual_it: Iterable | None) -> None:
-        error_msg = "validation error: %s != %s"
         if expected_it is None or actual_it is None:
             if expected_it is actual_it:
                 return
-            logger.error(error_msg, actual_it, expected_it)
-            return
+            raise ValidationError(expected_it, actual_it)
         for (
             actual,
             expected,
         ) in zip_longest(actual_it, expected_it):
             if actual != expected:
-                logger.error(error_msg, actual, expected)
+                raise ValidationError(expected, actual)
 
     def prepare_validation_method(self, cql_dto: CqlDto) -> Callable:
         # prepare statement upfront, otherwise it hangs when running inside sut query driver callback

@@ -27,7 +27,7 @@ def test_middleware_can_be_init_and_run():
     config = GeminiConfiguration()
     middlewares = init_middlewares(config, [DummyMiddleware, DummyMiddlewareTwo])
     on_success_clbs, on_err_clbs = run_middlewares(
-        cql_dto=CqlDto(statement="dummy"), middlewares=middlewares
+        cql_dto=CqlDto(statement="dummy"), middlewares=middlewares, error_handler=lambda x: x
     )
 
     # assert callbacks are in reverse order than middleware execution
