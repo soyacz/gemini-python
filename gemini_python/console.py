@@ -7,7 +7,7 @@ from typing import List, Any
 
 import click
 
-from gemini_python import GeminiConfiguration, QueryMode
+from gemini_python import GeminiConfiguration, QueryMode, set_event_after_timeout
 from gemini_python.query_driver import QueryDriverFactory
 from gemini_python.gemini_process import GeminiProcess
 from gemini_python.replication_strategy import SimpleReplicationStrategy
@@ -156,6 +156,7 @@ def run(*args: Any, **kwargs: Any) -> None:
     oracle_query_driver.teardown()
     processes = []
     termination_event = Event()
+    set_event_after_timeout(termination_event, config.duration)
     for _ in range(config.concurrency):
         gemini_process = GeminiProcess(config, keyspace, termination_event)
         processes.append(gemini_process)

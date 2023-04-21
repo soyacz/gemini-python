@@ -1,5 +1,4 @@
 import logging
-import time
 from multiprocessing import Process
 from multiprocessing.synchronize import Event as EventClass
 
@@ -55,7 +54,6 @@ class GeminiProcess(Process):
         return tables_partitions
 
     def run(self) -> None:
-        start_time = time.time()
         # query drivers must be created in run() method and not in __init__, otherwise cassandra driver hangs
         sut_query_driver = QueryDriverFactory.create_query_driver(self._gemini_config.test_cluster)
         generator = LoadGenerator(
@@ -68,10 +66,7 @@ class GeminiProcess(Process):
         error_handler = base_error_handler(
             config=self._gemini_config, termination_event=self._termination_event
         )
-        while (
-            not self._termination_event.is_set()
-            and time.time() - start_time < self._gemini_config.duration
-        ):
+        while not self._termination_event.is_set():
             cql_dto = generator.get_query()
             on_success_callbacks, on_error_callbacks = run_middlewares(
                 cql_dto, middlewares, error_handler

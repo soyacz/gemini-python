@@ -1,6 +1,8 @@
 import logging
+import threading
 from dataclasses import dataclass
 from enum import unique, Enum
+from multiprocessing.synchronize import Event as EventClass
 from typing import List, Callable, Iterable, Any, Dict
 
 logger = logging.getLogger(__name__)
@@ -64,3 +66,8 @@ class ValidationError(Exception):
 
     def __init__(self, expected: Dict | Iterable | None, actual: Dict | Iterable | None):
         super().__init__(f"Expected: {expected}, actual: {actual}")
+
+
+def set_event_after_timeout(event: EventClass, timeout: int) -> None:
+    timer = threading.Timer(timeout, event.set)
+    timer.start()
