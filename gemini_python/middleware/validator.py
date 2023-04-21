@@ -11,7 +11,7 @@ from gemini_python import (
     log_error,
     ValidationError,
 )
-from gemini_python.query_driver import NoOpQueryDriver, QueryDriver
+from gemini_python.query_driver import QueryDriver
 from gemini_python.middleware import Middleware
 from gemini_python.subprocess_query_driver import SubprocessQueryDriver
 
@@ -38,10 +38,6 @@ class GeminiValidator:
                 raise ValidationError(expected, actual)
 
     def prepare_validation_method(self, cql_dto: CqlDto) -> Callable:
-        # prepare statement upfront, otherwise it hangs when running inside sut query driver callback
-        if isinstance(self._oracle, NoOpQueryDriver):
-            # don't validate when oracle is not configured
-            return lambda *args, **kwargs: None
         return partial(self.validate, cql_dto)
 
     def validate(self, cql_dto: CqlDto, expected_result: Iterable | None) -> None:

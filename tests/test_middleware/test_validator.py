@@ -1,7 +1,6 @@
 import pytest
 
 from gemini_python import CqlDto, ValidationError
-from gemini_python.query_driver import NoOpQueryDriver
 from gemini_python.middleware.validator import GeminiValidator
 from tests.utils.memory_query_driver import MemoryQueryDriver
 
@@ -61,10 +60,3 @@ def test_validator_fails_when_oracle_returns_empty_list_and_is_expected_value():
 
     with pytest.raises(ValidationError):
         validator.validate(CqlDto(statement="select", values=()), expected_result=["test"])
-
-
-def test_validator_does_nothing_when_oracle_is_not_configured():
-    oracle_query_driver = NoOpQueryDriver()
-    validator = GeminiValidator(oracle=oracle_query_driver)
-    validate = validator.prepare_validation_method(CqlDto(statement="insert", values=("", "value")))
-    validate(expected_result="I would fail if oracle was configured")

@@ -61,10 +61,10 @@ class GeminiProcess(Process):
         generator = LoadGenerator(
             schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
         )
-        middlewares = init_middlewares(
-            self._gemini_config,
-            [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware, Validator],
-        )
+        active_middlewares = [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware]
+        if self._gemini_config.oracle_cluster:
+            active_middlewares.append(Validator)
+        middlewares = init_middlewares(self._gemini_config, active_middlewares)
         error_handler = base_error_handler(
             config=self._gemini_config, termination_event=self._termination_event
         )
