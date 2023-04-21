@@ -151,6 +151,9 @@ def run(*args: Any, **kwargs: Any) -> None:
         keyspace.drop(oracle_query_driver)
     keyspace.create(sut_query_driver, replication_strategy=SimpleReplicationStrategy(3))
     keyspace.create(oracle_query_driver, replication_strategy=SimpleReplicationStrategy(1))
+    # drivers no longer needed in main process
+    sut_query_driver.teardown()
+    oracle_query_driver.teardown()
     processes = []
     termination_event = Event()
     for _ in range(config.concurrency):
