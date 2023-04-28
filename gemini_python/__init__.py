@@ -68,6 +68,7 @@ class ValidationError(Exception):
         super().__init__(f"Expected: {expected}, actual: {actual}")
 
 
-def set_event_after_timeout(event: EventClass, timeout: int) -> None:
+def set_event_after_timeout(event: EventClass, timeout: int) -> threading.Timer:
     timer = threading.Timer(timeout, event.set)
     timer.start()
+    return timer

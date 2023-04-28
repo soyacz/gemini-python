@@ -1,15 +1,16 @@
 import logging
 from multiprocessing import Process
 from multiprocessing.synchronize import Event as EventClass
+from typing import Type
 
 from gemini_python import GeminiConfiguration
 from gemini_python.error_handlers import base_error_handler
 from gemini_python.query_driver import (
     QueryDriverFactory,
+    QueryDriverException,
 )
 from gemini_python.load_generator import LoadGenerator
-from gemini_python.middleware import init_middlewares, run_middlewares
-from gemini_python.middleware.concurrency_limiter import ConcurrencyLimiterMiddleware
+from gemini_python.middleware import init_middlewares, run_middlewares, Middleware
 from gemini_python.middleware.performance_counter import PerformanceCounterMiddleware
 from gemini_python.middleware.validator import Validator
 from gemini_python.schema import Keyspace
@@ -59,7 +60,7 @@ class GeminiProcess(Process):
         generator = LoadGenerator(
             schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
         )
-        active_middlewares = [PerformanceCounterMiddleware, ConcurrencyLimiterMiddleware]
+        active_middlewares: list[Type[Middleware]] = [PerformanceCounterMiddleware]
         if self._gemini_config.oracle_cluster:
             active_middlewares.append(Validator)
         middlewares = init_middlewares(self._gemini_config, active_middlewares)
@@ -71,11 +72,18 @@ class GeminiProcess(Process):
             on_success_callbacks, on_error_callbacks = run_middlewares(
                 cql_dto, middlewares, error_handler
             )
-            sut_query_driver.execute_async(
-                cql_dto,
-                on_success=on_success_callbacks,
-                on_error=on_error_callbacks + [handle_exception],
-            )
+            try:
+                result = sut_query_driver.execute(cql_dto)
+            except QueryDriverException as exc:
+                for err_clb in on_error_callbacks:
+                    err_clb(exc)
+                continue
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.exception("Unhandled exception when querying SUT.: %s", exc, exc_info=True)
+                self._termination_event.set()
+                continue
+            for clb in on_success_callbacks:
+                clb(result)
         for middleware in middlewares:
             middleware.teardown()
         sut_query_driver.teardown()

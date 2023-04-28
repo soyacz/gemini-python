@@ -11,9 +11,8 @@ from gemini_python import (
     log_error,
     ValidationError,
 )
-from gemini_python.query_driver import QueryDriver
+from gemini_python.query_driver import QueryDriver, QueryDriverFactory
 from gemini_python.middleware import Middleware
-from gemini_python.subprocess_query_driver import SubprocessQueryDriver
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +24,7 @@ class GeminiValidator:
         self._oracle = oracle
 
     @staticmethod
-    def _validate_fun(expected_it: Iterable | None, actual_it: Iterable | None) -> None:
-        if expected_it is None or actual_it is None:
-            if expected_it is actual_it:
-                return
-            raise ValidationError(expected_it, actual_it)
+    def _validate_fun(expected_it: Iterable, actual_it: Iterable) -> None:
         for (
             actual,
             expected,
@@ -40,7 +35,7 @@ class GeminiValidator:
     def prepare_validation_method(self, cql_dto: CqlDto) -> Callable:
         return partial(self.validate, cql_dto)
 
-    def validate(self, cql_dto: CqlDto, expected_result: Iterable | None) -> None:
+    def validate(self, cql_dto: CqlDto, expected_result: Iterable) -> None:
         result = self._oracle.execute(cql_dto)
         self._validate_fun(expected_result, result)
 
@@ -53,7 +48,9 @@ class Validator(Middleware):
 
     def __init__(self, config: GeminiConfiguration) -> None:
         super().__init__(config)
-        self._gemini_validator = GeminiValidator(SubprocessQueryDriver(config.oracle_cluster))
+        self._gemini_validator = GeminiValidator(
+            QueryDriverFactory.create_query_driver(config.oracle_cluster)
+        )
 
     def run(self, cql_dto: CqlDto) -> Tuple[OnSuccessClb, OnErrorClb]:
         return self._gemini_validator.prepare_validation_method(cql_dto), log_error

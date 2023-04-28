@@ -25,8 +25,8 @@ class MemoryQueryDriver(QueryDriver):
         for callback in on_success:
             callback(result)
 
-    def execute(self, cql_dto: CqlDto) -> Iterable | None:
+    def execute(self, cql_dto: CqlDto) -> Iterable:
         if cql_dto.statement == "insert":
             self._data.append(cql_dto.values)
-            return None
+            return []
         return self._data

@@ -4,7 +4,7 @@ from queue import Empty, Queue
 from typing import List, Iterable, Tuple
 
 from gemini_python import CqlDto
-from gemini_python.query_driver import QueryDriver, QueryDriverFactory
+from gemini_python.query_driver import QueryDriver, QueryDriverFactory, QueryDriverException
 
 
 class QueryDriverProcess(multiprocessing.Process):
@@ -29,7 +29,12 @@ class QueryDriverProcess(multiprocessing.Process):
         while not self._termination_event.is_set():
             try:
                 cql_dto, outbound_pipe = self._inbound_queue.get(timeout=1)
-                query_driver.execute_async(cql_dto, [outbound_pipe.send], [outbound_pipe.send])
+                try:
+                    result = query_driver.execute(cql_dto)
+                except QueryDriverException as exc:
+                    outbound_pipe.send(exc)
+                    continue
+                outbound_pipe.send(list(result))
             except Empty:
                 pass
         query_driver.teardown()
@@ -53,7 +58,7 @@ class SubprocessQueryDriver(QueryDriver):
         self._query_driver_process = QueryDriverProcess(self._query_driver_queue, hosts)
         self._query_driver_process.start()
 
-    def execute(self, cql_dto: CqlDto) -> Iterable | None:
+    def execute(self, cql_dto: CqlDto) -> Iterable:
         """Executes statement synchronously in query driver."""
         self._query_driver_queue.put((cql_dto, self._child_pipe))
         return self._parent_pipe.recv()  # type: ignore

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 from gemini_python.query_driver import QueryDriver
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
@@ -23,5 +23,6 @@ class RecordingQueryDriver(QueryDriver):
         for callback in on_success:
             callback(None)
 
-    def execute(self, cql_dto: CqlDto) -> None:
+    def execute(self, cql_dto: CqlDto) -> Iterable:
         self.executed_queries.append(cql_dto)
+        return []

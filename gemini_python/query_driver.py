@@ -4,6 +4,7 @@ from abc import ABC
 from functools import lru_cache
 from typing import Iterable, List
 
+from cassandra import DriverException  # type: ignore
 from cassandra.cluster import Cluster  # type: ignore
 from cassandra.policies import RoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement, dict_factory  # type: ignore
@@ -13,6 +14,10 @@ from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+class QueryDriverException(Exception):
+    """Exception raised by QueryDriver."""
 
 
 class QueryDriver(ABC):
@@ -26,7 +31,7 @@ class QueryDriver(ABC):
     ) -> None:
         """Execute statement asynchronously."""
 
-    def execute(self, cql_dto: CqlDto) -> Iterable | None:
+    def execute(self, cql_dto: CqlDto) -> Iterable:
         """Executes statement synchronously."""
 
     def prepare(self, statement: str) -> None:
@@ -70,9 +75,14 @@ class PythonQueryDriver(QueryDriver):
         for err_callback in on_error:
             future.add_errback(err_callback)
 
-    def execute(self, cql_dto: CqlDto) -> Iterable | None:
+    def execute(self, cql_dto: CqlDto) -> Iterable:
         """Executes statement synchronously."""
-        return self.session.execute(cql_dto.statement, parameters=cql_dto.values)  # type: ignore
+        prepared_statement = self._prepare_statement(cql_dto.statement)
+        try:
+            res = self.session.execute(prepared_statement, parameters=cql_dto.values)
+        except DriverException as exc:
+            raise QueryDriverException from exc
+        return list(res)
 
     def teardown(self) -> None:
         logger.debug("Closing connection with %s", self.cluster.metadata.all_hosts())
@@ -93,6 +103,9 @@ class NoOpQueryDriver(QueryDriver):
     ) -> None:
         for callback in on_success:
             callback(None)
+
+    def execute(self, cql_dto: CqlDto) -> Iterable:
+        return []
 
 
 class QueryDriverFactory:

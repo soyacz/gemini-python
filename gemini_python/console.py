@@ -156,7 +156,7 @@ def run(*args: Any, **kwargs: Any) -> None:
     oracle_query_driver.teardown()
     processes = []
     termination_event = Event()
-    set_event_after_timeout(termination_event, config.duration)
+    timer = set_event_after_timeout(termination_event, config.duration)
     for _ in range(config.concurrency):
         gemini_process = GeminiProcess(config, keyspace, termination_event)
         processes.append(gemini_process)
@@ -164,6 +164,7 @@ def run(*args: Any, **kwargs: Any) -> None:
         gemini_process.start()
     for gemini_process in processes:
         gemini_process.join()
+    timer.cancel()
 
 
 if __name__ == "__main__":
