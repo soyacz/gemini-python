@@ -163,7 +163,11 @@ def run(*args: Any, **kwargs: Any) -> None:
     for gemini_process in processes:
         gemini_process.start()
     for gemini_process in processes:
-        gemini_process.join()
+        try:
+            gemini_process.join()
+        except KeyboardInterrupt:
+            logger.info("KeyboardInterrupt, stopping...")
+            termination_event.set()
     timer.cancel()
 
 
