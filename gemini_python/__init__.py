@@ -1,9 +1,9 @@
 import logging
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import unique, Enum
 from multiprocessing.synchronize import Event as EventClass
-from typing import List, Callable, Iterable, Any, Dict
+from typing import List, Callable, Iterable, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,45 @@ class CqlDto:
 
     statement: str
     values: tuple = ()
+
+
+class Operation(Enum):
+    """Operation type"""
+
+    WRITE = "write"
+    READ = "read"
+
+
+@dataclass
+class ProcessResult:
+    """Data Transfer Object for process result"""
+
+    write_ops: int = 0
+    write_errors: int = 0
+    read_ops: int = 0
+    read_errors: int = 0
+
+    def increment_ops(self, operation: Operation) -> None:
+        if operation == Operation.WRITE:
+            self.write_ops += 1
+        else:
+            self.read_ops += 1
+
+    def increment_errors(self, operation: Operation) -> None:
+        if operation == Operation.WRITE:
+            self.write_errors += 1
+        else:
+            self.read_errors += 1
+
+    def __add__(self, other: "ProcessResult") -> "ProcessResult":
+        if not isinstance(other, ProcessResult):
+            return NotImplemented
+        return ProcessResult(
+            self.write_ops + other.write_ops,
+            self.write_errors + other.write_errors,
+            self.read_ops + other.read_ops,
+            self.read_errors + other.read_errors,
+        )
 
 
 @unique
@@ -47,16 +86,6 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     fail_fast: bool = False
 
 
-# pylint: disable=unused-argument
-def do_nothing(*args: Any, **kwargs: Any) -> None:
-    """Does nothing. May be sometimes required."""
-
-
-def log_error(*args: Any, **kwargs: Any) -> None:
-    """Logging error callback"""
-    logger.error("error: %s, %s", args, kwargs)
-
-
 OnSuccessClb = Callable[[Iterable | None], None]
 OnErrorClb = Callable[[Exception], None]
 
@@ -65,6 +94,8 @@ class ValidationError(Exception):
     """Exception raised when validation fails"""
 
     def __init__(self, expected: Dict | Iterable | None, actual: Dict | Iterable | None):
+        self.actual = actual
+        self.expected = expected
         super().__init__(f"Expected: {expected}, actual: {actual}")
 
 

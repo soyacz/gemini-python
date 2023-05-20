@@ -1,7 +1,8 @@
 from abc import ABC
 from itertools import cycle
+from typing import Tuple
 
-from gemini_python import CqlDto
+from gemini_python import CqlDto, Operation
 from gemini_python.schema import Table
 
 
@@ -14,7 +15,7 @@ class QueryGenerator(ABC):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> CqlDto:
+    def __next__(self) -> Tuple[Operation, CqlDto]:
         pass
 
 
@@ -33,8 +34,8 @@ class InsertQueryGenerator(QueryGenerator):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> CqlDto:
-        return CqlDto(
+    def __next__(self) -> Tuple[Operation, CqlDto]:
+        return Operation.WRITE, CqlDto(
             self._stmt,
             next(self._partitions)
             + tuple(
@@ -60,8 +61,8 @@ class SelectQueryGenerator(QueryGenerator):
     def __iter__(self) -> "QueryGenerator":
         return self
 
-    def __next__(self) -> CqlDto:
-        return CqlDto(
+    def __next__(self) -> Tuple[Operation, CqlDto]:
+        return Operation.READ, CqlDto(
             self._stmt,
             next(self._partitions),
         )

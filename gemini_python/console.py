@@ -2,12 +2,12 @@
 import ipaddress
 import logging
 import re
-from multiprocessing import Event
+from multiprocessing import Event, Queue
 from typing import List, Any
 
 import click
 
-from gemini_python import GeminiConfiguration, QueryMode, set_event_after_timeout
+from gemini_python import GeminiConfiguration, QueryMode, set_event_after_timeout, ProcessResult
 from gemini_python.query_driver import QueryDriverFactory
 from gemini_python.gemini_process import GeminiProcess
 from gemini_python.replication_strategy import SimpleReplicationStrategy
@@ -156,9 +156,10 @@ def run(*args: Any, **kwargs: Any) -> None:
     oracle_query_driver.teardown()
     processes = []
     termination_event = Event()
+    results_queue: Queue[ProcessResult] = Queue()  # pylint: disable=unsubscriptable-object
     timer = set_event_after_timeout(termination_event, config.duration)
     for _ in range(config.concurrency):
-        gemini_process = GeminiProcess(config, keyspace, termination_event)
+        gemini_process = GeminiProcess(config, keyspace, termination_event, results_queue)
         processes.append(gemini_process)
     for gemini_process in processes:
         gemini_process.start()
@@ -169,6 +170,8 @@ def run(*args: Any, **kwargs: Any) -> None:
             logger.info("KeyboardInterrupt, stopping...")
             termination_event.set()
     timer.cancel()
+    result = sum([results_queue.get() for _ in range(results_queue.qsize())], ProcessResult())
+    logger.info(result)
 
 
 if __name__ == "__main__":

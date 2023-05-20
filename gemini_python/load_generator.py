@@ -1,6 +1,7 @@
 from itertools import cycle
+from typing import Tuple
 
-from gemini_python import CqlDto, QueryMode
+from gemini_python import CqlDto, QueryMode, Operation
 from gemini_python.query import (
     InsertQueryGenerator,
     SelectQueryGenerator,
@@ -32,5 +33,5 @@ class LoadGenerator:
                     raise ValueError(f"Unsupported query mode: {mode}")
         self._query_generator = cycle(generators)
 
-    def get_query(self) -> CqlDto:
+    def get_query(self) -> Tuple[Operation, CqlDto]:
         return next(next(self._query_generator))
