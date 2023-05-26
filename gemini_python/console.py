@@ -3,6 +3,7 @@ import ipaddress
 import logging
 import re
 import sys
+from datetime import timedelta
 from multiprocessing import Event, Queue
 from typing import List, Any
 
@@ -19,24 +20,36 @@ logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-duration_pattern = re.compile(r"(?P<hours>[\d]*)h|(?P<minutes>[\d]*)m|(?P<seconds>[\d]*)s")
+
+duration_pattern = re.compile(
+    r"((?P<weeks>[.\d]+?)w)?"
+    r"((?P<days>[.\d]+?)d)?"
+    r"((?P<hours>[.\d]+?)h)?"
+    r"((?P<minutes>[.\d]+?)m)?"
+    r"((?P<seconds>[.\d]+?)s)?"
+    r"((?P<microseconds>[.\d]+?)ms)?"
+    r"((?P<milliseconds>[.\d]+?)us)?$"
+)
 
 
-def time_period_str_to_seconds(time_period_string: str) -> int:
-    """Transforms duration string into seconds int. e.g. 1h -> 3600, 1h22m->4920 or 10m->600"""
-    try:
-        return int(time_period_string)
-    except ValueError:
-        pass
-    seconds = sum(
-        int(g[0] or 0) * 3600 + int(g[1] or 0) * 60 + int(g[2] or 0)
-        for g in duration_pattern.findall(time_period_string)
+def time_period_str_to_seconds(time_period_string: str) -> float:
+    """
+    Transforms duration string into seconds int. e.g. 1h -> 3600, 1h22m->4920 or 10m->600.
+
+    :param time_period_string: A time duration string. (eg. 2h13m)
+    :return float: The number of seconds in the duration.
+    """
+    parts = duration_pattern.match(time_period_string)
+    assert parts is not None, (
+        f"Could not parse any time information from '{time_period_string}'."
+        " Examples of valid strings: '8h', '2d8h5m20s', '2m4s'"
     )
-    return seconds
+    time_params = {name: float(param) for name, param in parts.groupdict().items() if param}
+    return timedelta(**time_params).total_seconds()
 
 
 # pylint: disable=unused-argument
-def validate_time_period(ctx: click.Context, param: click.Parameter, value: str) -> int:
+def validate_time_period(ctx: click.Context, param: click.Parameter, value: str) -> float:
     try:
         seconds = time_period_str_to_seconds(value)
         if not seconds:
