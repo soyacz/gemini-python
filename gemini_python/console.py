@@ -2,6 +2,7 @@
 import ipaddress
 import logging
 import re
+import sys
 from multiprocessing import Event, Queue
 from typing import List, Any
 
@@ -142,6 +143,7 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
+    interrupted = False
     keyspace = generate_schema(config=config)
     sut_query_driver = QueryDriverFactory.create_query_driver(config.test_cluster)
     oracle_query_driver = QueryDriverFactory.create_query_driver(config.oracle_cluster)
@@ -169,9 +171,14 @@ def run(*args: Any, **kwargs: Any) -> None:
         except KeyboardInterrupt:
             logger.info("KeyboardInterrupt, stopping...")
             termination_event.set()
+            interrupted = True
     timer.cancel()
     result = sum([results_queue.get() for _ in range(results_queue.qsize())], ProcessResult())
     logger.info(result)
+    if result.write_errors or result.read_errors:
+        sys.exit(1)
+    if interrupted:
+        sys.exit(130)
 
 
 if __name__ == "__main__":
