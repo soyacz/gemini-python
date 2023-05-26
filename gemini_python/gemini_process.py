@@ -9,6 +9,7 @@ from gemini_python.query_driver import (
     QueryDriverException,
 )
 from gemini_python.load_generator import LoadGenerator
+from gemini_python.retries_generator import RetriesGenerator
 from gemini_python.schema import Keyspace
 from gemini_python.validator import validate_result
 
@@ -61,18 +62,25 @@ class GeminiProcess(Process):
         generator = LoadGenerator(
             schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
         )
+        retry_generator = RetriesGenerator(self._gemini_config.max_mutation_retries_backoff)
         while not self._termination_event.is_set():
-            operation, cql_dto = generator.get_query()
+            if retry_generator.retry_available():
+                operation, cql_dto, attempt = retry_generator.get_retry()
+            else:
+                operation, cql_dto = generator.get_query()
+                attempt = 0
             try:
                 sut_result = sut_query_driver.execute(cql_dto)
                 oracle_result = oracle_query_driver.execute(cql_dto)
                 validate_result(oracle_result, sut_result)
             except (QueryDriverException, ValidationError) as exc:
-                logger.error(exc)
-                process_result.increment_errors(operation)
-                if self._gemini_config.fail_fast:
-                    self._termination_event.set()
-                continue
+                if attempt > self._gemini_config.max_mutation_retries:
+                    logger.error(exc)
+                    process_result.increment_errors(operation)
+                    if self._gemini_config.fail_fast:
+                        self._termination_event.set()
+                    continue
+                retry_generator.add_retry(operation, cql_dto, attempt + 1)
             except Exception as exc:  # pylint: disable=broad-except
                 logger.exception("Unhandled exception when querying SUT.: %s", exc, exc_info=True)
                 self._termination_event.set()

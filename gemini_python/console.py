@@ -153,6 +153,19 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List
 @click.option("--max-columns", type=int, default=16, help="Maximum number of generated columns")
 @click.option("--min-columns", type=int, default=8, help="Minimum number of generated columns")
 @click.option("--fail-fast", "-f", is_flag=True, help="Stop on first error")
+@click.option(
+    "--max-mutation-retries",
+    type=int,
+    default=2,
+    help="Maximum number of attempts to apply a mutation",
+)
+@click.option(
+    "--max-mutation-retries-backoff",
+    type=str,
+    default="10ms",
+    callback=validate_time_period,
+    help="Duration between attempts to apply a mutation for example 10ms or 1s",
+)
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
