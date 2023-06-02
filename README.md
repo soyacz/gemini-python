@@ -25,3 +25,13 @@ pytest .
 coverage run --source=gemini_python -m pytest .
 
 ```
+Release:
+```
+1. update version in pyproject.toml
+2. pre-commit run --all
+
+3. poetry build
+3. docker build --tag scylladb/hydra-loaders:gemini-python-0.4.0 .
+4. docker push scylladb/hydra-loaders:gemini-python-0.4.0
+
+```

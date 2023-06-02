@@ -51,26 +51,6 @@ WORKDIR /
 COPY . .
 WORKDIR /gemini-python
 
-# 'lint' stage runs black and isort
-# running in check mode means build will fail if any linting errors occur
-FROM development AS lint
-WORKDIR /
-
-RUN black --config ./pyproject.toml --check gemini_python tests
-RUN mypy --config ./pyproject.toml gemini_python
-RUN pylint --rcfile ./pyproject.toml -j 2 -d consider-using-f-string gemini_python
-CMD ["tail", "-f", "/dev/null"]
-
-
-# 'test' stage runs our unit tests with pytest and
-# coverage.
-FROM development AS test
-WORKDIR /
-
-RUN coverage run --rcfile ./pyproject.toml -m pytest ./tests
-RUN coverage report --fail-under 80
-
-
 # 'production' stage uses the clean 'python-base' stage and copyies
 # in only our runtime deps that were installed in the 'builder-base'
 FROM python-base as production
