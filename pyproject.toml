@@ -6,7 +6,7 @@ authors = ["Lukasz Sojka <lukasz.sojka@scylladb.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 scylla-driver = "^3.25.11"
 
 [tool.poetry.group.dev.dependencies]

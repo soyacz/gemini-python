@@ -2,13 +2,12 @@
 import logging
 from abc import ABC
 from functools import lru_cache
-from typing import Iterable, List
-
+from typing import Iterable, List, Optional
 from cassandra import DriverException  # type: ignore
 from cassandra.cluster import Cluster  # type: ignore
+from cassandra.io.asyncorereactor import AsyncoreConnection  # type: ignore
 from cassandra.policies import RoundRobinPolicy  # type: ignore
 from cassandra.query import PreparedStatement, dict_factory  # type: ignore
-from cassandra.io.libevreactor import LibevConnection  # type: ignore
 
 from gemini_python import CqlDto, OnSuccessClb, OnErrorClb
 
@@ -45,7 +44,7 @@ class PythonQueryDriver(QueryDriver):
     """Communicates with and queries Scylla/Cassandra databases."""
 
     def __init__(self, hosts: List[str], port: int = 9042) -> None:
-        kwargs = {"metrics_enabled": False, "connection_class": LibevConnection}
+        kwargs = {"metrics_enabled": False, "connection_class": AsyncoreConnection}
         self.cluster = Cluster(
             hosts, port=port, load_balancing_policy=RoundRobinPolicy(), protocol_version=4, **kwargs
         )
@@ -112,7 +111,7 @@ class QueryDriverFactory:
     """Creates QueryDriver objects according to cluster parameters."""
 
     @classmethod
-    def create_query_driver(cls, cluster_ips: List[str] | None = None) -> QueryDriver:
+    def create_query_driver(cls, cluster_ips: Optional[List[str]] = None) -> QueryDriver:
         if cluster_ips:
             return PythonQueryDriver(cluster_ips)
         return NoOpQueryDriver()

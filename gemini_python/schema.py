@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import random
-from typing import List, Type
+from typing import List, Type, Optional
 
 from gemini_python.column_types import Column, ALL_COLUMN_TYPES
 from gemini_python.query_driver import QueryDriver
@@ -71,7 +71,7 @@ def _generate_random_column(
     prefix: str,
     index: int,
     column_types: List[Type[Column]],
-    max_size: int | None = None,
+    max_size: Optional[int] = None,
 ) -> Column:
     params = {"name": f"{prefix}{index}", "seed": seed}
     if max_size:

@@ -5,7 +5,7 @@ import re
 import sys
 from datetime import timedelta
 from multiprocessing import Event, Queue
-from typing import List, Any
+from typing import List, Any, Optional
 
 import click
 
@@ -61,7 +61,7 @@ def validate_time_period(ctx: click.Context, param: click.Parameter, value: str)
     return seconds
 
 
-def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> List[str] | None:
+def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> Optional[List[str]]:
     # pylint: disable=unused-argument
     if value is None:
         click.echo(

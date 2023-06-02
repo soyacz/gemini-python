@@ -1,7 +1,7 @@
 import threading
 import time
 from collections import deque
-from typing import Tuple, Deque
+from typing import Tuple, Deque, Optional
 
 from gemini_python import CqlDto, Operation
 
@@ -14,7 +14,7 @@ class RetriesGenerator:
         self._dto_out_list: Deque[Tuple[Operation, CqlDto, int]] = deque()
         self._max_mutation_retries_backoff = max_mutation_retries_backoff
         self._lock = threading.Lock()
-        self._timer: threading.Timer | None = None
+        self._timer: Optional[threading.Timer] = None
 
     def add_retry(self, operation: Operation, cql_dto: CqlDto, attempt: int) -> None:
         """Add cql_dto to retry list, so it's later returned after backoff time"""

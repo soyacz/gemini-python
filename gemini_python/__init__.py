@@ -3,7 +3,7 @@ import threading
 from dataclasses import dataclass, field
 from enum import unique, Enum
 from multiprocessing.synchronize import Event as EventClass
-from typing import List, Callable, Iterable, Dict
+from typing import List, Callable, Iterable, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,8 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     """Configuration parameters for Gemini"""
 
     mode: QueryMode = QueryMode.WRITE
-    test_cluster: List[str] | None = None
-    oracle_cluster: List[str] | None = None
+    test_cluster: Optional[List[str]] = None
+    oracle_cluster: Optional[List[str]] = None
     duration: int = 3
     drop_schema: bool = False
     token_range_slices: int = 10000
@@ -88,14 +88,14 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     max_mutation_retries_backoff: float = 0.01
 
 
-OnSuccessClb = Callable[[Iterable | None], None]
+OnSuccessClb = Callable[[Optional[Iterable]], None]
 OnErrorClb = Callable[[Exception], None]
 
 
 class ValidationError(Exception):
     """Exception raised when validation fails"""
 
-    def __init__(self, expected: Dict | Iterable | None, actual: Dict | Iterable | None):
+    def __init__(self, expected: Union[Dict, Iterable, None], actual: Union[Dict, Iterable, None]):
         self.actual = actual
         self.expected = expected
         super().__init__(f"Expected: {expected}, actual: {actual}")

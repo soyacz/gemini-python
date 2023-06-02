@@ -1,7 +1,7 @@
 import multiprocessing
 from multiprocessing.connection import Connection
 from queue import Empty, Queue
-from typing import List, Iterable, Tuple
+from typing import List, Iterable, Tuple, Optional
 
 from gemini_python import CqlDto
 from gemini_python.query_driver import QueryDriver, QueryDriverFactory, QueryDriverException
@@ -16,7 +16,7 @@ class QueryDriverProcess(multiprocessing.Process):
     def __init__(
         self,
         inbound_queue: Queue[Tuple[CqlDto, Connection]],
-        hosts: List[str] | None = None,
+        hosts: Optional[List[str]] = None,
     ) -> None:
         super().__init__()
         self._cluster_ips = hosts
@@ -50,7 +50,7 @@ class SubprocessQueryDriver(QueryDriver):
     Creates subprocess with query driver and communicates with it via queues and pipes.
     queues/pipes generate overhead so it's first place for optimization."""
 
-    def __init__(self, hosts: List[str] | None = None) -> None:
+    def __init__(self, hosts: Optional[List[str]] = None) -> None:
         self._parent_pipe, self._child_pipe = multiprocessing.Pipe()
         self._query_driver_queue: multiprocessing.Queue[
             Tuple[CqlDto, Connection]

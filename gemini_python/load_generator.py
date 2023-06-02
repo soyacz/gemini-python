@@ -21,16 +21,15 @@ class LoadGenerator:
             partitions
         ), "partitions were not generated for all tables. Should not happen."
         for table, partition_list in zip(schema.tables, partitions):
-            match mode:
-                case QueryMode.WRITE:
-                    generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
-                case QueryMode.READ:
-                    generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
-                case QueryMode.MIXED:
-                    generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
-                    generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
-                case _:
-                    raise ValueError(f"Unsupported query mode: {mode}")
+            if mode == QueryMode.WRITE:
+                generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
+            elif mode == QueryMode.READ:
+                generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+            elif mode == QueryMode.MIXED:
+                generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
+                generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+            else:
+                raise ValueError(f"Unsupported query mode: {mode}")
         self._query_generator = cycle(generators)
 
     def get_query(self) -> Tuple[Operation, CqlDto]:
