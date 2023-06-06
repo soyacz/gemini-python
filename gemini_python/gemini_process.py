@@ -3,7 +3,8 @@ from multiprocessing import Process
 from multiprocessing.synchronize import Event as EventClass
 from queue import Queue
 
-from gemini_python import GeminiConfiguration, ProcessResult, ValidationError
+from gemini_python import GeminiConfiguration, ProcessResult, ValidationError, Operation
+from gemini_python.history_store import HistoryStore
 from gemini_python.query_driver import (
     QueryDriverFactory,
     QueryDriverException,
@@ -26,6 +27,7 @@ class GeminiProcess(Process):
 
     def __init__(
         self,
+        index: int,
         config: GeminiConfiguration,
         schema: Keyspace,
         termination_event: EventClass,
@@ -34,6 +36,7 @@ class GeminiProcess(Process):
         super().__init__()
         self._gemini_config = config
         self._schema = schema
+        self._index = index
         self._partitions = self._generate_partitions()
         self._termination_event: EventClass = termination_event
         self._results_queue: Queue[ProcessResult] = results_queue
@@ -59,9 +62,16 @@ class GeminiProcess(Process):
             self._gemini_config.oracle_cluster
         )
         process_result = ProcessResult()
-        generator = LoadGenerator(
-            schema=self._schema, mode=self._gemini_config.mode, partitions=self._partitions
+        history_store = HistoryStore(
+            self._index, self._schema, drop_schema=self._gemini_config.drop_schema
         )
+        generator = LoadGenerator(
+            schema=self._schema,
+            mode=self._gemini_config.mode,
+            partitions=self._partitions,
+            history_store=history_store,
+        )
+
         retry_generator = RetriesGenerator(self._gemini_config.max_mutation_retries_backoff)
         while not self._termination_event.is_set():
             if retry_generator.retry_available():
@@ -72,6 +82,8 @@ class GeminiProcess(Process):
             try:
                 sut_result = sut_query_driver.execute(cql_dto)
                 oracle_result = oracle_query_driver.execute(cql_dto)
+                if operation == Operation.WRITE:
+                    history_store.insert(cql_dto)
                 validate_result(oracle_result, sut_result)
             except (QueryDriverException, ValidationError) as exc:
                 if attempt > self._gemini_config.max_mutation_retries:
@@ -86,6 +98,7 @@ class GeminiProcess(Process):
                 self._termination_event.set()
                 continue
             process_result.increment_ops(operation)
+        history_store.commit()
         self._results_queue.put(process_result)
         sut_query_driver.teardown()
         oracle_query_driver.teardown()

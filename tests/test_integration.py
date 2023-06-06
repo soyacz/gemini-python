@@ -12,18 +12,20 @@ runner = CliRunner()
 
 
 def test_can_run_gemini():
-    result = runner.invoke(run, ["--duration", "1s"])
+    result = runner.invoke(run, ["--duration", "1s", "--drop-schema"])
     assert result.exit_code == 0
 
 
 def test_can_run_gemini_process(config):
     config.mode = QueryMode.MIXED
     config.duration = 1
+    config.drop_schema = True
     keyspace = generate_schema(config)
     termination_event = Event()
     set_event_after_timeout(termination_event, config.duration)
     results_queue: Queue[ProcessResult] = Queue()
     GeminiProcess(
+        index=0,
         config=config,
         schema=keyspace,
         termination_event=termination_event,

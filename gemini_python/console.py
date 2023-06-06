@@ -173,7 +173,7 @@ def run(*args: Any, **kwargs: Any) -> None:
     keyspace = generate_schema(config=config)
     sut_query_driver = QueryDriverFactory.create_query_driver(config.test_cluster)
     oracle_query_driver = QueryDriverFactory.create_query_driver(config.oracle_cluster)
-    if config.drop_schema:
+    if config.drop_schema and config.mode != QueryMode.READ:
         logger.info("dropping schema %s", keyspace.name)
         keyspace.drop(sut_query_driver)
         keyspace.drop(oracle_query_driver)
@@ -186,8 +186,8 @@ def run(*args: Any, **kwargs: Any) -> None:
     termination_event = Event()
     results_queue: Queue[ProcessResult] = Queue()  # pylint: disable=unsubscriptable-object
     timer = set_event_after_timeout(termination_event, config.duration)
-    for _ in range(config.concurrency):
-        gemini_process = GeminiProcess(config, keyspace, termination_event, results_queue)
+    for idx in range(config.concurrency):
+        gemini_process = GeminiProcess(idx, config, keyspace, termination_event, results_queue)
         processes.append(gemini_process)
     for gemini_process in processes:
         gemini_process.start()

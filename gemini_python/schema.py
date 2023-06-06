@@ -36,6 +36,15 @@ class Table:
             f" PRIMARY KEY ({partition_key}{clustering_key}));"
         )
 
+    def as_sql(self) -> CqlDto:
+        return CqlDto(
+            f"CREATE TABLE IF NOT EXISTS '{self.keyspace_name}.{self.name}' ("
+            f"d_time INTEGER , "
+            f"{', '.join([column.name + ' ' + column.sql_type for column in self.partition_keys])}, "
+            f"{', '.join([column.name + ' ' + column.sql_type for column in self.clustering_keys])},"
+            f" PRIMARY KEY ({', '.join([column.name for column in self.partition_keys + self.clustering_keys])}));"
+        )
+
 
 @dataclass
 class Keyspace:
@@ -53,6 +62,12 @@ class Keyspace:
         ]
         for table in self.tables:
             queries.append(table.as_query())
+        return queries
+
+    def as_sql(self) -> List[CqlDto]:
+        queries = []
+        for table in self.tables:
+            queries.append(table.as_sql())
         return queries
 
     def create(self, query_driver: QueryDriver, replication_strategy: ReplicationStrategy) -> None:

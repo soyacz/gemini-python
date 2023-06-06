@@ -18,6 +18,7 @@ class Column:
 
     name: str
     cql_type: str
+    sql_type: str
     seed: int = 0
     size: int = 100
 
@@ -44,6 +45,7 @@ class AsciiColumn(Column):
 
     name: str
     cql_type: str = field(default="ascii")
+    sql_type: str = field(default="TEXT")
     seed: int = 0
     size: int = 100
 
@@ -59,6 +61,7 @@ class BigIntColumn(Column):
     """Represents 'bigint' column type"""
 
     cql_type: str = "bigint"
+    sql_type: str = "INTEGER"
     _seq: int = 0
     seed = 0
     size = sys.maxsize

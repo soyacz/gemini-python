@@ -8,3 +8,4 @@ def test_can_query_using_query_driver_in_subprocess():
     assert (
         result == []
     )  # uses NoOpQueryDriver, so it's always [[] but at least we run this code and verify it ends
+    query_driver.teardown()

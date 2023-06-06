@@ -2,6 +2,7 @@ from itertools import cycle
 from typing import Tuple
 
 from gemini_python import CqlDto, QueryMode, Operation
+from gemini_python.history_store import HistoryStore
 from gemini_python.query import (
     InsertQueryGenerator,
     SelectQueryGenerator,
@@ -14,8 +15,13 @@ class LoadGenerator:
     """Query generator selector according to schema and mode."""
 
     def __init__(
-        self, schema: Keyspace, partitions: list[list[tuple]], mode: QueryMode = QueryMode.WRITE
+        self,
+        schema: Keyspace,
+        partitions: list[list[tuple]],
+        history_store: HistoryStore,
+        mode: QueryMode = QueryMode.WRITE,
     ):
+
         generators: list[QueryGenerator] = []
         assert len(schema.tables) == len(
             partitions
@@ -24,10 +30,18 @@ class LoadGenerator:
             if mode == QueryMode.WRITE:
                 generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
             elif mode == QueryMode.READ:
-                generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+                generators.append(
+                    SelectQueryGenerator(
+                        table=table, partitions=partition_list, history_store=history_store
+                    )
+                )
             elif mode == QueryMode.MIXED:
                 generators.append(InsertQueryGenerator(table=table, partitions=partition_list))
-                generators.append(SelectQueryGenerator(table=table, partitions=partition_list))
+                generators.append(
+                    SelectQueryGenerator(
+                        table=table, partitions=partition_list, history_store=history_store
+                    )
+                )
             else:
                 raise ValueError(f"Unsupported query mode: {mode}")
         self._query_generator = cycle(generators)
