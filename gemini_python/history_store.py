@@ -13,7 +13,7 @@ class HistoryStore:
         table = schema.tables[0]
         self._bindings = len(table.partition_keys + table.clustering_keys) + 1
         self._insert_query = (
-            f"insert into '{table.keyspace_name}.{table.name}' "
+            f"INSERT OR REPLACE INTO '{table.keyspace_name}.{table.name}' "
             f"(d_time, {', '.join([col.name for col in table.partition_keys + table.clustering_keys])}) "
             f"VALUES ({','.join('?'*self._bindings)})"
         )
