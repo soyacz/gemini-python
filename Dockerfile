@@ -3,7 +3,7 @@
 # See https://docs.docker.com/develop/develop-images/multistage-build/
 
 # Creating a python base with shared environment variables
-FROM python:3.10.9-slim as python-base
+FROM pypy:3.9-slim as python-base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=off \
@@ -58,5 +58,6 @@ FROM python-base as production
 COPY --from=builder-base $VENV_PATH $VENV_PATH
 
 COPY ./gemini_python /gemini-python/gemini_python
+RUN ln -s /opt/pysetup/.venv/bin/gemini /gemini-python/gemini
 ENV PYTHONPATH=/gemini-python
 WORKDIR /gemini-python

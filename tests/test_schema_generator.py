@@ -38,8 +38,8 @@ def test_schema_can_generate_keyspace_and_tables_ddl_queries():
     queries = keyspace.as_sql()
     assert queries == [
         CqlDto(
-            "CREATE TABLE IF NOT EXISTS 'gemini.table0' "
-            "(d_time INTEGER , pk0 TEXT, pk1 TEXT, ck0 TEXT, ck1 TEXT, PRIMARY KEY (pk0, pk1, ck0, ck1));"
+            "CREATE TABLE IF NOT EXISTS 'gemini.table0'"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, d_time INTEGER , pk0 TEXT, pk1 TEXT, ck0 TEXT, ck1 TEXT);"
         )
     ]
 
@@ -77,7 +77,8 @@ def test_can_create_table_with_one_pk():
     queries = keyspace.as_sql()
     assert queries == [
         CqlDto(
-            "CREATE TABLE IF NOT EXISTS 'gemini.table0' (d_time INTEGER , pk0 TEXT, ck0 TEXT, ck1 TEXT, PRIMARY KEY (pk0, ck0, ck1));"
+            "CREATE TABLE IF NOT EXISTS 'gemini.table0'"
+            " (id INTEGER PRIMARY KEY AUTOINCREMENT, d_time INTEGER , pk0 TEXT, ck0 TEXT, ck1 TEXT);"
         )
     ]
 

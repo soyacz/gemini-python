@@ -45,10 +45,10 @@ class Table:
     def as_sql(self) -> CqlDto:
         return CqlDto(
             f"CREATE TABLE IF NOT EXISTS '{self.keyspace_name}.{self.name}' ("
+            f"id INTEGER PRIMARY KEY AUTOINCREMENT, "
             f"d_time INTEGER , "
             f"{', '.join([column.name + ' ' + column.sql_type for column in self.partition_keys])}, "
-            f"{', '.join([column.name + ' ' + column.sql_type for column in self.clustering_keys])},"
-            f" PRIMARY KEY ({', '.join([column.name for column in self.partition_keys + self.clustering_keys])}));"
+            f"{', '.join([column.name + ' ' + column.sql_type for column in self.clustering_keys])});"
         )
 
 

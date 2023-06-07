@@ -23,7 +23,6 @@ def test_can_generate_insert_queries(simple_schema_config, only_big_int_column_t
 
 def test_can_generate_select_queries(simple_schema_config):
     schema = generate_schema(simple_schema_config)
-    print(schema)
     history_store = HistoryStore(0, schema, drop_schema=True)
     insert_generator = LoadGenerator(
         schema=schema,

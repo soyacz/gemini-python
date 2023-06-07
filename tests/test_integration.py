@@ -12,7 +12,7 @@ runner = CliRunner()
 
 
 def test_can_run_gemini():
-    result = runner.invoke(run, ["--duration", "1s", "--drop-schema"])
+    result = runner.invoke(run, ["--duration", "500ms", "--drop-schema"])
     assert result.exit_code == 0
 
 

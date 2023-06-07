@@ -1,8 +1,12 @@
+import logging
+import random
 import sqlite3
 from typing import List
 
 from gemini_python import CqlDto
 from gemini_python.schema import Keyspace
+
+logger = logging.getLogger(__name__)
 
 
 class HistoryStore:
@@ -23,6 +27,8 @@ class HistoryStore:
             self.drop_schema()
         for cql_dto in schema.as_sql():
             self.cursor.execute(cql_dto.statement)
+        self.cursor.execute("select max(id) from 'gemini.table0';")
+        self.rows_count = self.cursor.fetchall()[0][0] or 0
 
     def drop_schema(self) -> None:
         for table in self._schema.tables:
@@ -34,11 +40,13 @@ class HistoryStore:
         self.cursor.execute(
             self._insert_query, deletion_time + cql_dto.values[: self._bindings - 1]
         )
+        self.rows_count += 1
 
     def commit(self) -> None:
         self.conn.commit()
 
     def get_random_row(self) -> tuple:
-        self.cursor.execute("SELECT * FROM 'gemini.table0' ORDER BY RANDOM() LIMIT 1;")
+        idx = random.randint(1, self.rows_count)
+        self.cursor.execute(f"SELECT * FROM 'gemini.table0' where id={idx}")
         row: List[tuple] = self.cursor.fetchall()
-        return row[0][1:]  # drop d_time column
+        return row[0][2:]  # drop id and d_time column
