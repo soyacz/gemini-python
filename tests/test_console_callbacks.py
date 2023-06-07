@@ -12,6 +12,7 @@ from gemini_python.console import time_period_str_to_seconds
         ("25m", 1500),
         ("10h", 36000),
         ("25s", 25),
+        ("500ms", 0.5),
     ),
 )
 def test_duration_str_to_seconds_function(duration, seconds):

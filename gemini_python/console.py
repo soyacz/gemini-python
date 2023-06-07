@@ -27,8 +27,8 @@ duration_pattern = re.compile(
     r"((?P<hours>[.\d]+?)h)?"
     r"((?P<minutes>[.\d]+?)m)?"
     r"((?P<seconds>[.\d]+?)s)?"
-    r"((?P<microseconds>[.\d]+?)ms)?"
-    r"((?P<milliseconds>[.\d]+?)us)?$"
+    r"((?P<milliseconds>[.\d]+?)ms)?"
+    r"((?P<microseconds>[.\d]+?)us)?$"
 )
 
 
@@ -52,9 +52,7 @@ def time_period_str_to_seconds(time_period_string: str) -> float:
 def validate_time_period(ctx: click.Context, param: click.Parameter, value: str) -> float:
     try:
         seconds = time_period_str_to_seconds(value)
-        if not seconds:
-            raise ValueError
-    except ValueError as exc:
+    except (ValueError, AssertionError) as exc:
         raise click.BadParameter(
             f"'{value}' is not valid time string for {param.name}. Example valid: '1h44m22s' or just number, e.g. '320'"
         ) from exc
@@ -156,15 +154,22 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> Opti
 @click.option(
     "--max-mutation-retries",
     type=int,
-    default=2,
+    default=5,
     help="Maximum number of attempts to apply a mutation",
 )
 @click.option(
     "--max-mutation-retries-backoff",
     type=str,
-    default="10ms",
+    default="500ms",
     callback=validate_time_period,
     help="Duration between attempts to apply a mutation for example 10ms or 1s",
+)
+@click.option(
+    "--ttl",
+    type=str,
+    default="0s",
+    callback=validate_time_period,
+    help="Generated tables default TTL, (in time format string e.g. 1h22m33s)",
 )
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""

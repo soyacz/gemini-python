@@ -85,7 +85,8 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     max_columns: int = 16
     fail_fast: bool = False
     max_mutation_retries: int = 2
-    max_mutation_retries_backoff: float = 0.01
+    max_mutation_retries_backoff: float = 0.5
+    ttl: int = 0
 
 
 OnSuccessClb = Callable[[Optional[Iterable]], None]

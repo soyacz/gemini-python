@@ -17,6 +17,7 @@ class Table:
     partition_keys: List[Column]
     clustering_keys: List[Column] = field(default_factory=list)
     columns: List[Column] = field(default_factory=list)
+    ttl: int = 0
 
     @property
     def all_columns(self) -> List[Column]:
@@ -30,11 +31,16 @@ class Table:
             if self.clustering_keys
             else ""
         )
-        return CqlDto(
+        cql_dto = CqlDto(
             f"CREATE TABLE IF NOT EXISTS {self.keyspace_name}.{self.name} "
             f"({', '.join([str(col) for col in self.all_columns])},"
             f" PRIMARY KEY ({partition_key}{clustering_key}));"
         )
+        if self.ttl:
+            cql_dto.statement = cql_dto.statement.replace(
+                ");", f") WITH default_time_to_live={int(self.ttl)};"
+            )
+        return cql_dto
 
     def as_sql(self) -> CqlDto:
         return CqlDto(
@@ -127,6 +133,7 @@ def generate_schema(  # pylint: disable=dangerous-default-value
                 partition_keys=partition_keys,
                 clustering_keys=clustering_keys,
                 columns=columns,
+                ttl=config.ttl,
             )
         )
     return Keyspace(name=ks_name, tables=tables)
