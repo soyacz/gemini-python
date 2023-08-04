@@ -69,7 +69,10 @@ class GeminiProcess(Process):
         )
         process_result = ProcessResult()
         history_store = HistoryStore(
-            self._index, self._schema, drop_schema=self._gemini_config.drop_schema
+            self._index,
+            self._schema,
+            drop_schema=self._gemini_config.drop_schema,
+            history_file_dir=self._gemini_config.history_files_dir,
         )
         generator = LoadGenerator(
             schema=self._schema,

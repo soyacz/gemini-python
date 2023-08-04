@@ -1,6 +1,7 @@
 import logging
 import random
 import sqlite3
+from pathlib import Path
 from typing import List
 
 from gemini_python import CqlDto
@@ -12,7 +13,13 @@ logger = logging.getLogger(__name__)
 class HistoryStore:
     """HistoryStore is a simple sqlite3 database that stores the history of all writes (only pk and ck values)."""
 
-    def __init__(self, index: int, schema: Keyspace, drop_schema: bool = False) -> None:
+    def __init__(
+        self,
+        index: int,
+        schema: Keyspace,
+        drop_schema: bool = False,
+        history_file_dir: Path = Path.cwd() / ".gemini",
+    ) -> None:
         self._schema = schema
         table = schema.tables[0]
         self._bindings = len(table.partition_keys + table.clustering_keys) + 1
@@ -21,7 +28,7 @@ class HistoryStore:
             f"(d_time, {', '.join([col.name for col in table.partition_keys + table.clustering_keys])}) "
             f"VALUES ({','.join('?'*self._bindings)})"
         )
-        self.conn = sqlite3.connect(f"gemini_{index}.db")
+        self.conn = sqlite3.connect(f"{history_file_dir}/gemini_{index}.db")
         self.cursor = self.conn.cursor()
         if drop_schema:
             self.drop_schema()

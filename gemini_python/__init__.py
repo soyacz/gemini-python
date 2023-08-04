@@ -1,8 +1,10 @@
 import logging
+import os
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import unique, Enum
 from multiprocessing.synchronize import Event as EventClass
+from pathlib import Path
 from typing import List, Callable, Iterable, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
@@ -87,6 +89,8 @@ class GeminiConfiguration:  # pylint: disable=too-many-instance-attributes
     max_mutation_retries: int = 2
     max_mutation_retries_backoff: float = 0.5
     ttl: int = 0
+    history_files_max_size_gb: int = 1
+    history_files_dir: Path = Path.cwd() / ".gemini"
 
 
 OnSuccessClb = Callable[[Optional[Iterable]], None]

@@ -2,9 +2,11 @@
 import ipaddress
 import logging
 import re
+import subprocess
 import sys
 from datetime import timedelta
 from multiprocessing import Event, Queue
+from pathlib import Path
 from typing import List, Any, Optional
 
 import click
@@ -174,6 +176,7 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> Opti
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
+    _create_ramdisk(config.history_files_max_size_gb, config.history_files_dir)
     interrupted = False
     keyspace = generate_schema(config=config)
     sut_query_driver = QueryDriverFactory.create_query_driver(config.test_cluster)
@@ -210,6 +213,22 @@ def run(*args: Any, **kwargs: Any) -> None:
         sys.exit(1)
     if interrupted:
         sys.exit(130)
+
+
+def _create_ramdisk(size_gb: int, mount_point: Path) -> None:
+    """Creates a ramdisk of the specified size in GB."""
+    if mount_point.is_mount():
+        logger.info("%s directory is already mounted, skipping ramdisk creation", mount_point)
+        return
+    mount_point.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        " ".join(
+            ["sudo", "mount", "-t", "tmpfs", "-o", f"size={size_gb}G", "tmpfs", str(mount_point)]
+        ),
+        check=True,
+        shell=True,
+    )
+    logger.info("created ramdisk at %s with size of %s gb", mount_point, size_gb)
 
 
 if __name__ == "__main__":
