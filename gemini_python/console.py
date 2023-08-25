@@ -11,7 +11,8 @@ from typing import List, Any, Optional
 
 import click
 
-from gemini_python import GeminiConfiguration, QueryMode, set_event_after_timeout, ProcessResult
+from gemini_python import GeminiConfiguration, QueryMode, set_event_after_timeout
+from gemini_python.results import ProcessResult, process_results, version
 from gemini_python.query_driver import QueryDriverFactory
 from gemini_python.gemini_process import GeminiProcess
 from gemini_python.replication_strategy import SimpleReplicationStrategy
@@ -87,6 +88,7 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> Opti
         "allow_extra_args": True,
     }
 )
+@click.version_option(version=version, prog_name="Gemini-Python")
 @click.option(
     "--mode",
     type=click.Choice(tuple(member.lower() for member in QueryMode.__members__)),
@@ -173,6 +175,11 @@ def validate_ips(ctx: click.Context, param: click.Parameter, value: str) -> Opti
     callback=validate_time_period,
     help="Generated tables default TTL, (in time format string e.g. 1h22m33s)",
 )
+@click.option(
+    "--outfile",
+    type=Path,
+    help="File to write results to. If not specified, results will be written to stdout",
+)
 def run(*args: Any, **kwargs: Any) -> None:
     """Gemini is an automatic random testing tool for Scylla."""
     config = GeminiConfiguration(*args, **kwargs)
@@ -207,9 +214,8 @@ def run(*args: Any, **kwargs: Any) -> None:
             termination_event.set()
             interrupted = True
     timer.cancel()
-    result = sum([results_queue.get() for _ in range(results_queue.qsize())], ProcessResult())
-    logger.info(result)
-    if result.write_errors or result.read_errors:
+    is_failed = process_results(results_queue, config.outfile)
+    if is_failed:
         sys.exit(1)
     if interrupted:
         sys.exit(130)

@@ -22,11 +22,13 @@ class HistoryStore:
     ) -> None:
         self._schema = schema
         table = schema.tables[0]
-        self._bindings = len(table.partition_keys + table.clustering_keys) + 1
+        self._no_of_columns = (
+            len(table.partition_keys + table.clustering_keys) + 1
+        )  # +1 for d_time (deletion time)
         self._insert_query = (
             f"INSERT OR REPLACE INTO '{table.keyspace_name}.{table.name}' "
             f"(d_time, {', '.join([col.name for col in table.partition_keys + table.clustering_keys])}) "
-            f"VALUES ({','.join('?'*self._bindings)})"
+            f"VALUES ({','.join('?' * self._no_of_columns)})"
         )
         self.conn = sqlite3.connect(f"{history_file_dir}/gemini_{index}.db")
         self.cursor = self.conn.cursor()
@@ -45,7 +47,7 @@ class HistoryStore:
     def insert(self, cql_dto: CqlDto) -> None:
         deletion_time = (None,)
         self.cursor.execute(
-            self._insert_query, deletion_time + cql_dto.values[: self._bindings - 1]
+            self._insert_query, deletion_time + cql_dto.values[: self._no_of_columns - 1]
         )
         self.rows_count += 1
 

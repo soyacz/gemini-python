@@ -3,7 +3,8 @@ from multiprocessing import Process
 from multiprocessing.synchronize import Event as EventClass
 from queue import Queue
 
-from gemini_python import GeminiConfiguration, ProcessResult, ValidationError, Operation
+from gemini_python import GeminiConfiguration, ValidationError, Operation
+from gemini_python.results import ProcessResult
 from gemini_python.history_store import HistoryStore
 from gemini_python.query_driver import (
     QueryDriverFactory,

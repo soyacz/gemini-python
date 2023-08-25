@@ -1,7 +1,15 @@
+from pathlib import Path
+
 import pytest
 
 from gemini_python import GeminiConfiguration
 from gemini_python.column_types import BigIntColumn
+
+
+@pytest.fixture
+def project_root_dir() -> Path:
+    """Root directory of the project"""
+    return Path(__file__).parent.parent
 
 
 @pytest.fixture

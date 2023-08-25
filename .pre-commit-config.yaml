@@ -15,6 +15,13 @@ repos:
     -   id: black
 -   repo: local
     hooks:
+        - id: check-version-bump
+          name: Check version bump
+          entry: python scripts/check_version_bump.py
+          language: python
+          files: version.txt
+          always_run: true
+
         - id:  mypy
           name: mypy
           language: system
