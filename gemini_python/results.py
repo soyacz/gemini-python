@@ -50,7 +50,7 @@ def process_results(results_queue: Queue[ProcessResult], outfile: Optional[Path]
         [results_queue.get() for _ in range(results_queue.qsize())], ProcessResult()
     )
     result = {
-        "gemini_version": version,
+        "gemini_version": version.strip(),
         "result": process_result.__dict__,
     }
     result_str = json.dumps(result, indent=2)

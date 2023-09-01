@@ -68,10 +68,12 @@ OnErrorClb = Callable[[Exception], None]
 class ValidationError(Exception):
     """Exception raised when validation fails"""
 
-    def __init__(self, expected: Union[Dict, Iterable, None], actual: Union[Dict, Iterable, None]):
-        self.actual = actual
-        self.expected = expected
-        super().__init__(f"Expected: {expected}, actual: {actual}")
+    def __init__(
+        self, oracle_value: Union[Dict, Iterable, None], sut_value: Union[Dict, Iterable, None]
+    ):
+        self.sut_value = sut_value
+        self.oracle_value = oracle_value
+        super().__init__(f"Oracle: {oracle_value}, SUT: {sut_value}")
 
 
 def set_event_after_timeout(event: EventClass, timeout: int) -> threading.Timer:

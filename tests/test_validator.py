@@ -18,8 +18,8 @@ def test_validate_result_different_raises_validation_error():
     sut_result = [1, 2, 3, 4, 6]  # Different last element
     with pytest.raises(ValidationError) as exc_info:
         validate_result(oracle_result, sut_result)
-    assert exc_info.value.actual == 5  # type: ignore
-    assert exc_info.value.expected == 6  # type: ignore
+    assert exc_info.value.oracle_value == 5  # type: ignore
+    assert exc_info.value.sut_value == 6  # type: ignore
 
 
 def test_validate_result_different_length_raises_validation_error():
@@ -27,5 +27,5 @@ def test_validate_result_different_length_raises_validation_error():
     sut_result = [1, 2, 3]  # Shorter input
     with pytest.raises(ValidationError) as exc_info:
         validate_result(oracle_result, sut_result)
-    assert exc_info.value.actual == 4  # type: ignore
-    assert exc_info.value.expected is None
+    assert exc_info.value.oracle_value == 4  # type: ignore
+    assert exc_info.value.sut_value is None

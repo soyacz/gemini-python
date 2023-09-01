@@ -12,7 +12,7 @@ from gemini_python.query_driver import (
 )
 from gemini_python.load_generator import LoadGenerator
 from gemini_python.retries_generator import RetriesGenerator
-from gemini_python.schema import Keyspace
+from gemini_python.schema import Schema
 from gemini_python.validator import validate_result
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class GeminiProcess(Process):
         self,
         index: int,
         config: GeminiConfiguration,
-        schema: Keyspace,
+        schema: Schema,
         termination_event: EventClass,
         results_queue: Queue[ProcessResult],
     ):
@@ -93,7 +93,7 @@ class GeminiProcess(Process):
                 oracle_result = oracle_query_driver.execute(cql_dto)
                 if operation == Operation.WRITE:
                     history_store.insert(cql_dto)
-                validate_result(oracle_result, sut_result)
+                validate_result(oracle_result=oracle_result, sut_result=sut_result)
             except (QueryDriverException, ValidationError) as exc:
                 if attempt > self._gemini_config.max_mutation_retries:
                     logger.error(exc)
@@ -103,7 +103,12 @@ class GeminiProcess(Process):
                     continue
                 retry_generator.add_retry(operation, cql_dto, attempt + 1)
             except Exception as exc:  # pylint: disable=broad-except
-                logger.exception("Unhandled exception when querying SUT.: %s", exc, exc_info=True)
+                logger.exception(
+                    "Unhandled exception when querying SUT.: %s.\ncql: %s",
+                    exc,
+                    cql_dto,
+                    exc_info=True,
+                )
                 self._termination_event.set()
                 continue
             process_result.increment_ops(operation)

@@ -53,7 +53,7 @@ class Table:
 
 
 @dataclass
-class Keyspace:
+class Schema:
     """Represents Scylla keyspace with tables"""
 
     name: str
@@ -105,7 +105,7 @@ def generate_schema(  # pylint: disable=dangerous-default-value
     pk_types: List[Type[Column]] = ALL_COLUMN_TYPES,
     ck_types: List[Type[Column]] = ALL_COLUMN_TYPES,
     c_types: List[Type[Column]] = ALL_COLUMN_TYPES,
-) -> Keyspace:
+) -> Schema:
     """Generates schema: Keyspace with tables according to configuration."""
     ks_name = "gemini"
     rand = random.Random(config.seed)
@@ -136,4 +136,4 @@ def generate_schema(  # pylint: disable=dangerous-default-value
                 ttl=config.ttl,
             )
         )
-    return Keyspace(name=ks_name, tables=tables)
+    return Schema(name=ks_name, tables=tables)

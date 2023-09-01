@@ -8,7 +8,7 @@ from gemini_python.query import (
     SelectQueryGenerator,
     QueryGenerator,
 )
-from gemini_python.schema import Keyspace
+from gemini_python.schema import Schema
 
 
 class LoadGenerator:
@@ -16,7 +16,7 @@ class LoadGenerator:
 
     def __init__(
         self,
-        schema: Keyspace,
+        schema: Schema,
         partitions: list[list[tuple]],
         history_store: HistoryStore,
         mode: QueryMode = QueryMode.WRITE,

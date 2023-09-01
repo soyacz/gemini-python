@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from gemini_python import CqlDto
-from gemini_python.schema import Keyspace
+from gemini_python.schema import Schema
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class HistoryStore:
     def __init__(
         self,
         index: int,
-        schema: Keyspace,
+        schema: Schema,
         drop_schema: bool = False,
         history_file_dir: Path = Path.cwd() / ".gemini",
     ) -> None:

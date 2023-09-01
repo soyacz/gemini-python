@@ -23,14 +23,14 @@ def test_can_run_gemini_process(config):
     config.mode = QueryMode.MIXED
     config.duration = 1
     config.drop_schema = True
-    keyspace = generate_schema(config)
+    schema = generate_schema(config)
     termination_event = Event()
     set_event_after_timeout(termination_event, config.duration)
     results_queue: Queue[ProcessResult] = Queue()
     GeminiProcess(
         index=0,
         config=config,
-        schema=keyspace,
+        schema=schema,
         termination_event=termination_event,
         results_queue=results_queue,
     ).run()

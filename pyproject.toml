@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gemini-python"
-version = "0.6.1"
+version = "0.6.2"
 description = "Gemini is an automatic random testing tool for ScyllaDB."
 authors = ["Lukasz Sojka <lukasz.sojka@scylladb.com>"]
 readme = "README.md"

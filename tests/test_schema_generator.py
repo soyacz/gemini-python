@@ -13,15 +13,15 @@ def test_schema_can_generate_keyspace_and_tables_ddl_queries():
         max_clustering_keys=2,
         max_partition_keys=2,
     )
-    keyspace = generate_schema(
+    schema = generate_schema(
         config,
         pk_types=[AsciiColumn, BigIntColumn],
         ck_types=[AsciiColumn, BigIntColumn],
         c_types=[AsciiColumn, BigIntColumn],
     )
-    assert keyspace.name == "gemini"
-    assert keyspace.tables
-    queries = keyspace.as_queries(replication_strategy=SimpleReplicationStrategy(3))
+    assert schema.name == "gemini"
+    assert schema.tables
+    queries = schema.as_queries(replication_strategy=SimpleReplicationStrategy(3))
     expected_queries = [
         CqlDto(
             "CREATE KEYSPACE IF NOT EXISTS gemini with "
@@ -35,7 +35,7 @@ def test_schema_can_generate_keyspace_and_tables_ddl_queries():
     ]
     assert queries == expected_queries
     # verify sql queries
-    queries = keyspace.as_sql()
+    queries = schema.as_sql()
     assert queries == [
         CqlDto(
             "CREATE TABLE IF NOT EXISTS 'gemini.table0'"
@@ -53,15 +53,15 @@ def test_can_create_table_with_one_pk():
         min_partition_keys=1,
         max_partition_keys=1,
     )
-    keyspace = generate_schema(
+    schema = generate_schema(
         config,
         pk_types=[AsciiColumn, BigIntColumn],
         ck_types=[AsciiColumn, BigIntColumn],
         c_types=[AsciiColumn, BigIntColumn],
     )
-    assert keyspace.name == "gemini"
-    assert keyspace.tables
-    queries = keyspace.as_queries(replication_strategy=SimpleReplicationStrategy(3))
+    assert schema.name == "gemini"
+    assert schema.tables
+    queries = schema.as_queries(replication_strategy=SimpleReplicationStrategy(3))
     expected_queries = [
         CqlDto(
             "CREATE KEYSPACE IF NOT EXISTS gemini with "
@@ -74,7 +74,7 @@ def test_can_create_table_with_one_pk():
         ),
     ]
     assert queries == expected_queries
-    queries = keyspace.as_sql()
+    queries = schema.as_sql()
     assert queries == [
         CqlDto(
             "CREATE TABLE IF NOT EXISTS 'gemini.table0'"
@@ -85,13 +85,13 @@ def test_can_create_table_with_one_pk():
 
 def test_schema_can_be_created_in_database(config):
     query_driver = RecordingQueryDriver()
-    keyspace = generate_schema(config)
-    keyspace.create(query_driver, SimpleReplicationStrategy(3))
-    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(
+    schema = generate_schema(config)
+    schema.create(query_driver, SimpleReplicationStrategy(3))
+    assert len(schema.as_queries(SimpleReplicationStrategy(3))) == len(
         query_driver.executed_queries
     )
     for ks_cql, executed_cql in zip(
-        keyspace.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
+        schema.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
     ):
         assert ks_cql == executed_cql
 
@@ -99,13 +99,13 @@ def test_schema_can_be_created_in_database(config):
 def test_can_create_multiple_tables(config):
     query_driver = RecordingQueryDriver()
     config.max_tables = 2
-    keyspace = generate_schema(config)
-    assert len(keyspace.tables) == 2
-    keyspace.create(query_driver, SimpleReplicationStrategy(3))
-    assert len(keyspace.as_queries(SimpleReplicationStrategy(3))) == len(
+    schema = generate_schema(config)
+    assert len(schema.tables) == 2
+    schema.create(query_driver, SimpleReplicationStrategy(3))
+    assert len(schema.as_queries(SimpleReplicationStrategy(3))) == len(
         query_driver.executed_queries
     )
     for ks_cql, executed_cql in zip(
-        keyspace.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
+        schema.as_queries(SimpleReplicationStrategy(3)), query_driver.executed_queries
     ):
         assert ks_cql == executed_cql

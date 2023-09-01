@@ -6,8 +6,8 @@ from gemini_python import ValidationError
 
 def validate_result(oracle_result: Iterable, sut_result: Iterable) -> None:
     for (
-        actual,
-        expected,
+        oracle_value,
+        sut_value,
     ) in zip_longest(oracle_result, sut_result):
-        if actual != expected:
-            raise ValidationError(expected, actual)
+        if oracle_value != sut_value:
+            raise ValidationError(oracle_value, sut_value)
